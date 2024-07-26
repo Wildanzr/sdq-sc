@@ -26,6 +26,7 @@ contract SDQCheckIn is AccessControl, Pausable {
 
     constructor(address sdq) {
         sdqToken = IERC20(sdq);
+        _grantRole(EDITOR_ROLE, msg.sender);
     }
 
     function checkIn() external {
@@ -54,7 +55,6 @@ contract SDQCheckIn is AccessControl, Pausable {
     }
 
     function unbanClaimer(address claimer) external onlyRole(EDITOR_ROLE) {
-        _checkAddress(claimer);
         claimData[claimer].isBlacklisted = false;
     }
 
@@ -62,13 +62,14 @@ contract SDQCheckIn is AccessControl, Pausable {
         return claimData[msg.sender];
     }
 
-    function _isConsecutiveDays(uint256 lastClaimed, uint32 currentDays) internal view returns (bool) {
-        return block.timestamp - lastClaimed <= currentDays * 1 days && currentDays > 0;
+    function withdraw(uint256 amount) external onlyRole(EDITOR_ROLE) {
+        if (sdqToken.balanceOf(address(this)) < amount) {
+            revert InsufficientBalance("Insufficient balance");
+        }
+        sdqToken.safeTransfer(msg.sender, amount);
     }
 
-    function _checkAddress(address claimer) internal view {
-        if (claimData[claimer].lastClaimed == 0) {
-            revert AccountError(claimer, "Claimer not found");
-        }
+    function _isConsecutiveDays(uint256 lastClaimed, uint32 currentDays) internal view returns (bool) {
+        return block.timestamp - lastClaimed <= currentDays * 1 days && currentDays > 0;
     }
 }

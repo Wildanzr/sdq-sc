@@ -25,8 +25,118 @@ describe("SDQCheckIn", function () {
       this.accounts = accounts;
     });
 
-    it("Should have 1 bilion sdqToken on sdqCheckin contract", async function () {
+    it("Should 1 bilion sdqToken on sdqCheckin contract", async function () {
       expect(await this.shodaqo.balanceOf(this.sdqCheckin.getAddress())).to.equal(ethers.parseEther("1000000000"));
+    });
+
+    it("Should 99 bilion sdqToken on owner address", async function () {
+      expect(await this.shodaqo.balanceOf(this.owner.getAddress())).to.equal(ethers.parseEther("99000000000"));
+    });
+  });
+
+  describe("Ban and Unban", function () {
+    beforeEach(async function () {
+      const { shodaqo, sdqCheckin, owner, minter, accounts } = await this.loadFixture(deploySDQCheckInFixture);
+      this.shodaqo = shodaqo;
+      this.sdqCheckin = sdqCheckin;
+      this.owner = owner;
+      this.minter = minter;
+      this.accounts = accounts;
+    });
+
+    it("Should ban user", async function () {
+      await this.sdqCheckin.connect(this.owner).banClaimer(this.accounts[1].address);
+      expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).isBlacklisted).to.be.true;
+    });
+
+    it("Should unban user", async function () {
+      await this.sdqCheckin.connect(this.owner).banClaimer(this.accounts[1].address);
+      expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).isBlacklisted).to.be.true;
+      await this.sdqCheckin.connect(this.owner).unbanClaimer(this.accounts[1].address);
+      expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).isBlacklisted).to.be.false;
+    });
+
+    it("Should fail to ban user because didn't have permission", async function () {
+      await expect(
+        this.sdqCheckin.connect(this.accounts[1]).banClaimer(this.accounts[2].address),
+      ).to.be.revertedWithCustomError(this.sdqCheckin, "AccessControlUnauthorizedAccount");
+    });
+  });
+
+  describe("Withdraw", function () {
+    beforeEach(async function () {
+      const { shodaqo, sdqCheckin, owner, minter, accounts } = await this.loadFixture(deploySDQCheckInFixture);
+      this.shodaqo = shodaqo;
+      this.sdqCheckin = sdqCheckin;
+      this.owner = owner;
+      this.minter = minter;
+      this.accounts = accounts;
+    });
+
+    it("Should fail to withdraw because didn't have permission", async function () {
+      const amount = ethers.parseEther("100");
+      await expect(this.sdqCheckin.connect(this.accounts[1]).withdraw(amount)).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "AccessControlUnauthorizedAccount",
+      );
+    });
+
+    it("Should fail to withdraw because insufficient balance", async function () {
+      const amount = ethers.parseEther("100000000000");
+      await expect(this.sdqCheckin.connect(this.owner).withdraw(amount)).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "InsufficientBalance",
+      );
+    });
+
+    it("Should withdraw correctly", async function () {
+      const amount = ethers.parseEther("100");
+      await this.sdqCheckin.connect(this.owner).withdraw(amount);
+      expect(await this.shodaqo.balanceOf(this.owner.getAddress())).to.equal(ethers.parseEther("99000000100"));
+    });
+  });
+
+  describe("CheckIn", function () {
+    beforeEach(async function () {
+      const { shodaqo, sdqCheckin, owner, minter, accounts } = await this.loadFixture(deploySDQCheckInFixture);
+      this.shodaqo = shodaqo;
+      this.sdqCheckin = sdqCheckin;
+      this.owner = owner;
+      this.minter = minter;
+      this.accounts = accounts;
+    });
+
+    it("Should checkin correctly", async function () {
+      await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+      expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).currentDays).to.be.equal(1);
+    });
+
+    it("Should checkin failed because still same day", async function () {
+      await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+      expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).currentDays).to.be.equal(1);
+      await expect(this.sdqCheckin.connect(this.accounts[1]).checkIn()).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "AccountError",
+      );
+    });
+
+    it("Should checkin failed because banned", async function () {
+      await this.sdqCheckin.connect(this.owner).banClaimer(this.accounts[1].address);
+      await expect(this.sdqCheckin.connect(this.accounts[1]).checkIn()).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "AccountError",
+      );
+    });
+
+    it("Should checkin failed because not enough balance", async function () {
+      const balanceStart = await this.shodaqo.balanceOf(this.sdqCheckin.getAddress());
+      await this.sdqCheckin.connect(this.owner).withdraw(balanceStart);
+
+      expect(await this.shodaqo.balanceOf(this.sdqCheckin.getAddress())).to.be.equal(0);
+      await expect(this.sdqCheckin.connect(this.accounts[1]).checkIn()).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "InsufficientBalance",
+      );
     });
   });
 });
