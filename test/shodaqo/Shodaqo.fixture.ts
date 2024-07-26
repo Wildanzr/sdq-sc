@@ -14,8 +14,5 @@ export async function deployShodaqoFixture() {
   const Shodaqo = (await ethers.getContractFactory("Shodaqo")) as Shodaqo__factory;
   const shodaqo = (await Shodaqo.deploy(owner.address, minter.address)) as Shodaqo;
 
-  // Variables
-  const MAX_SUPPLY = ethers.parseUnits("100000000000", "ether");
-
-  return { shodaqo, owner, minter, accounts, MAX_SUPPLY };
+  return { shodaqo, owner, minter, accounts };
 }

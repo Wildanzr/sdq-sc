@@ -17,16 +17,27 @@ describe("Shodaqo", function () {
 
   describe("Deployment", function () {
     beforeEach(async function () {
-      const { shodaqo, owner, minter, accounts, MAX_SUPPLY } = await this.loadFixture(deployShodaqoFixture);
+      const { shodaqo, owner, minter, accounts } = await this.loadFixture(deployShodaqoFixture);
       this.shodaqo = shodaqo;
       this.owner = owner;
       this.minter = minter;
       this.accounts = accounts;
-      this.MAX_SUPPLY = MAX_SUPPLY;
+    });
+
+    it("Should the max supply is 10 Bilion tokens", async function () {
+      expect(await this.shodaqo.totalSupply()).to.equal(await this.shodaqo.MAX_SUPPLY());
     });
 
     it("Should the admin has 10 Bilion tokens", async function () {
-      expect(await this.shodaqo.balanceOf(this.owner.address)).to.equal(this.MAX_SUPPLY);
+      expect(await this.shodaqo.balanceOf(this.owner.address)).to.equal(await this.shodaqo.MAX_SUPPLY());
+    });
+
+    it("Shoult admin address has role DEFAULT_ADMIN_ROLE", async function () {
+      expect(await this.shodaqo.hasRole(await this.shodaqo.DEFAULT_ADMIN_ROLE(), this.owner.address)).to.be.true;
+    });
+
+    it("Should minter address has role MINTER_ROLE", async function () {
+      expect(await this.shodaqo.hasRole(await this.shodaqo.MINTER_ROLE(), this.minter.address)).to.be.true;
     });
   });
 });
