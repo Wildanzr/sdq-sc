@@ -32,7 +32,7 @@ describe("Shodaqo", function () {
       expect(await this.shodaqo.balanceOf(this.owner.address)).to.equal(await this.shodaqo.MAX_SUPPLY());
     });
 
-    it("Shoult admin address has role DEFAULT_ADMIN_ROLE", async function () {
+    it("Should admin address has role DEFAULT_ADMIN_ROLE", async function () {
       expect(await this.shodaqo.hasRole(await this.shodaqo.DEFAULT_ADMIN_ROLE(), this.owner.address)).to.be.true;
     });
 

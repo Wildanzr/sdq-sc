@@ -1,4 +1,4 @@
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { loadFixture, time } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
@@ -61,6 +61,13 @@ describe("SDQCheckIn", function () {
         this.sdqCheckin.connect(this.accounts[1]).banClaimer(this.accounts[2].address),
       ).to.be.revertedWithCustomError(this.sdqCheckin, "AccessControlUnauthorizedAccount");
     });
+
+    it("Should fail to unban user because didn't have permission", async function () {
+      await this.sdqCheckin.connect(this.owner).banClaimer(this.accounts[1].address);
+      await expect(
+        this.sdqCheckin.connect(this.accounts[1]).unbanClaimer(this.accounts[1].address),
+      ).to.be.revertedWithCustomError(this.sdqCheckin, "AccessControlUnauthorizedAccount");
+    });
   });
 
   describe("Withdraw", function () {
@@ -109,6 +116,7 @@ describe("SDQCheckIn", function () {
     it("Should checkin correctly", async function () {
       await this.sdqCheckin.connect(this.accounts[1]).checkIn();
       expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).currentDays).to.be.equal(1);
+      expect(await this.shodaqo.balanceOf(this.accounts[1].address)).to.be.equal(ethers.parseEther("1.25"));
     });
 
     it("Should checkin failed because still same day", async function () {
@@ -137,6 +145,75 @@ describe("SDQCheckIn", function () {
         this.sdqCheckin,
         "InsufficientBalance",
       );
+    });
+
+    it("Should checkin failed becuase is paused", async function () {
+      await this.sdqCheckin.connect(this.owner).pause();
+      await expect(this.sdqCheckin.connect(this.accounts[1]).checkIn()).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "EnforcedPause",
+      );
+    });
+
+    it("Should checkin succes in consecutive days", async function () {
+      await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+      expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).currentDays).to.be.equal(1);
+      expect(await this.shodaqo.balanceOf(this.accounts[1].address)).to.be.equal(ethers.parseEther("1.25"));
+
+      // increase time 1 day
+      await time.increase(time.duration.days(1));
+
+      await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+      expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).currentDays).to.be.equal(2);
+      expect(await this.shodaqo.balanceOf(this.accounts[1].address)).to.be.equal(ethers.parseEther("2.75"));
+    });
+
+    it("Should checkin restart to 1 when not consecutive days", async function () {
+      await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+      expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).currentDays).to.be.equal(1);
+      expect(await this.shodaqo.balanceOf(this.accounts[1].address)).to.be.equal(ethers.parseEther("1.25"));
+
+      // increase time 1 day
+      await time.increase(time.duration.days(1));
+
+      await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+      expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).currentDays).to.be.equal(2);
+      expect(await this.shodaqo.balanceOf(this.accounts[1].address)).to.be.equal(ethers.parseEther("2.75"));
+
+      // increase time 1 day
+      await time.increase(time.duration.days(2));
+
+      await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+      expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).currentDays).to.be.equal(1);
+      expect(await this.shodaqo.balanceOf(this.accounts[1].address)).to.be.equal(ethers.parseEther("4"));
+    });
+
+    it("Should checkin correctly in a week", async function () {
+      const rewards = [1.25, 1.5, 2, 3, 5, 7, 10];
+      for (let i = 0; i < 7; i++) {
+        await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+        expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).currentDays).to.be.equal(i + 1);
+
+        const expectedBalance = rewards.slice(0, i + 1).reduce((a, b) => a + b, 0);
+        expect(await this.shodaqo.balanceOf(this.accounts[1].address)).to.be.equal(
+          ethers.parseEther(expectedBalance.toString()),
+        );
+        await time.increase(time.duration.days(1));
+      }
+    });
+
+    it("Should checkin correctly in 10 days", async function () {
+      const rewards = [1.25, 1.5, 2, 3, 5, 7, 10, 1.25, 1.5, 2];
+      for (let i = 0; i < 10; i++) {
+        await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+        expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).currentDays).to.be.equal(i + 1);
+
+        const expectedBalance = rewards.slice(0, i + 1).reduce((a, b) => a + b, 0);
+        expect(await this.shodaqo.balanceOf(this.accounts[1].address)).to.be.equal(
+          ethers.parseEther(expectedBalance.toString()),
+        );
+        await time.increase(time.duration.days(1));
+      }
     });
   });
 });
