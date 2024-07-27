@@ -1,4 +1,5 @@
 import "@nomicfoundation/hardhat-toolbox";
+import "@nomicfoundation/hardhat-verify";
 import "hardhat-deploy";
 import type { HardhatUserConfig } from "hardhat/config";
 import { vars } from "hardhat/config";
@@ -15,14 +16,14 @@ const infuraApiKey: string = vars.get("INFURA_API_KEY");
 const chainIds = {
   hardhat: 31337,
   sepolia: 11155111,
-  haqq: 54211
+  haqq: 54211,
 };
 
 function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
   let jsonRpcUrl: string;
   switch (chain) {
     case "haqq":
-      jsonRpcUrl = "https://explorer.testedge2.haqq.network/api";
+      jsonRpcUrl = "https://rpc.eth.testedge2.haqq.network";
       break;
     default:
       jsonRpcUrl = "https://" + chain + ".infura.io/v3/" + infuraApiKey;
@@ -42,11 +43,24 @@ const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   namedAccounts: {
     deployer: 0,
+    minter: 1,
+    other: 2,
   },
   etherscan: {
     apiKey: {
       sepolia: vars.get("ETHERSCAN_API_KEY", ""),
+      haqq: "not_set",
     },
+    customChains: [
+      {
+        network: "haqq",
+        chainId: 54211,
+        urls: {
+          apiURL: "https://explorer.testedge2.haqq.network/api",
+          browserURL: "https://explorer.testedge2.haqq.network",
+        },
+      },
+    ],
   },
   gasReporter: {
     currency: "USD",
@@ -73,6 +87,7 @@ const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.20",
     settings: {
+      evmVersion: "paris",
       metadata: {
         // Not including the metadata hash
         // https://github.com/paulrberg/hardhat-template/issues/31
