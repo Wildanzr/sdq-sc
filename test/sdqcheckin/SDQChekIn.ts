@@ -46,14 +46,21 @@ describe("SDQCheckIn", function () {
 
     it("Should ban user", async function () {
       await this.sdqCheckin.connect(this.owner).banClaimer(this.accounts[1].address);
-      expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).isBlacklisted).to.be.true;
+      await expect(this.sdqCheckin.connect(this.accounts[1]).checkIn()).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "AccountError",
+      );
     });
 
     it("Should unban user", async function () {
       await this.sdqCheckin.connect(this.owner).banClaimer(this.accounts[1].address);
-      expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).isBlacklisted).to.be.true;
+      await expect(this.sdqCheckin.connect(this.accounts[1]).checkIn()).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "AccountError",
+      );
       await this.sdqCheckin.connect(this.owner).unbanClaimer(this.accounts[1].address);
-      expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).isBlacklisted).to.be.false;
+      await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+      expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).consecutiveDays).to.be.equal(1);
     });
 
     it("Should fail to ban user because didn't have permission", async function () {

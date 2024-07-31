@@ -24,9 +24,9 @@ contract SDQCheckIn is AccessControl, Pausable, ReentrancyGuard {
         uint256 lastClaimed;
         uint32 consecutiveDays;
         uint256 totalClaimed;
-        bool isBlacklisted;
     }
 
+    mapping(address claimer => bool isBlacklisted) public blacklisted;
     mapping(address claimer => ClaimData details) public claimData;
     mapping(uint32 day => uint256 amount) public dailyClaimAmount;
 
@@ -73,7 +73,7 @@ contract SDQCheckIn is AccessControl, Pausable, ReentrancyGuard {
      * Requires the contract to be unpaused and not reentrant.
      */
     function checkIn() external whenNotPaused nonReentrant {
-        if (claimData[msg.sender].isBlacklisted) {
+        if (blacklisted[msg.sender]) {
             revert AccountError(msg.sender, "You are blacklisted");
         }
 
@@ -92,11 +92,10 @@ contract SDQCheckIn is AccessControl, Pausable, ReentrancyGuard {
             revert InsufficientBalance(msg.sender, balance, amount);
         }
 
-        sdqToken.safeTransfer(msg.sender, amount);
-
         userData.lastClaimed = block.timestamp;
         userData.totalClaimed += amount;
         userData.consecutiveDays = isConsecutive ? userData.consecutiveDays + 1 : 1;
+        sdqToken.safeTransfer(msg.sender, amount);
 
         emit CheckIn(msg.sender, amount);
     }
@@ -107,7 +106,7 @@ contract SDQCheckIn is AccessControl, Pausable, ReentrancyGuard {
      * @param claimer The address of the user to ban.
      */
     function banClaimer(address claimer) external onlyRole(EDITOR_ROLE) {
-        claimData[claimer].isBlacklisted = true;
+        blacklisted[claimer] = true;
         emit Ban(claimer);
     }
 
@@ -117,7 +116,7 @@ contract SDQCheckIn is AccessControl, Pausable, ReentrancyGuard {
      * @param claimer The address of the user to unban.
      */
     function unbanClaimer(address claimer) external onlyRole(EDITOR_ROLE) {
-        claimData[claimer].isBlacklisted = false;
+        blacklisted[claimer] = false;
         emit Unban(claimer);
     }
 
