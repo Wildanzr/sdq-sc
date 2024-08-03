@@ -1,9 +1,6 @@
 import { ethers } from "hardhat";
 
-import type { SDQCheckIn } from "../../types/contracts/SDQCheckIn";
-import type { Shodaqo } from "../../types/contracts/Shodaqo";
-import type { SDQCheckIn__factory } from "../../types/factories/contracts/SDQCheckIn__factory";
-import type { Shodaqo__factory } from "../../types/factories/contracts/Shodaqo__factory";
+import type { SDQCheckIn, SDQCheckIn__factory, Shodaqo, Shodaqo__factory } from "../../types";
 
 export async function deploySDQCheckInFixture() {
   // Get signers

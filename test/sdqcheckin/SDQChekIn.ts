@@ -17,12 +17,10 @@ describe("SDQCheckIn", function () {
 
   describe("Deployment", function () {
     beforeEach(async function () {
-      const { shodaqo, sdqCheckin, owner, minter, accounts } = await this.loadFixture(deploySDQCheckInFixture);
+      const { shodaqo, sdqCheckin, owner } = await this.loadFixture(deploySDQCheckInFixture);
       this.shodaqo = shodaqo;
       this.sdqCheckin = sdqCheckin;
       this.owner = owner;
-      this.minter = minter;
-      this.accounts = accounts;
     });
 
     it("Should 1 bilion sdqToken on sdqCheckin contract", async function () {
@@ -36,11 +34,9 @@ describe("SDQCheckIn", function () {
 
   describe("Ban and Unban", function () {
     beforeEach(async function () {
-      const { shodaqo, sdqCheckin, owner, minter, accounts } = await this.loadFixture(deploySDQCheckInFixture);
-      this.shodaqo = shodaqo;
+      const { sdqCheckin, owner, accounts } = await this.loadFixture(deploySDQCheckInFixture);
       this.sdqCheckin = sdqCheckin;
       this.owner = owner;
-      this.minter = minter;
       this.accounts = accounts;
     });
 
@@ -77,13 +73,55 @@ describe("SDQCheckIn", function () {
     });
   });
 
+  describe("Pause and Unpause", function () {
+    beforeEach(async function () {
+      const { sdqCheckin, owner, accounts } = await this.loadFixture(deploySDQCheckInFixture);
+      this.sdqCheckin = sdqCheckin;
+      this.owner = owner;
+      this.accounts = accounts;
+    });
+
+    it("Should pause the contract", async function () {
+      await this.sdqCheckin.connect(this.owner).pause();
+      await expect(this.sdqCheckin.connect(this.accounts[1]).checkIn()).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "EnforcedPause",
+      );
+    });
+
+    it("Should unpause the contract", async function () {
+      await this.sdqCheckin.connect(this.owner).pause();
+      await expect(this.sdqCheckin.connect(this.accounts[1]).checkIn()).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "EnforcedPause",
+      );
+      await this.sdqCheckin.connect(this.owner).unpause();
+      await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+      expect((await this.sdqCheckin.connect(this.accounts[1]).myCheckInStats()).consecutiveDays).to.be.equal(1);
+    });
+
+    it("Should fail to pause the contract because didn't have permission", async function () {
+      await expect(this.sdqCheckin.connect(this.accounts[1]).pause()).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "AccessControlUnauthorizedAccount",
+      );
+    });
+
+    it("Should fail to unpause the contract because didn't have permission", async function () {
+      await this.sdqCheckin.connect(this.owner).pause();
+      await expect(this.sdqCheckin.connect(this.accounts[1]).unpause()).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "AccessControlUnauthorizedAccount",
+      );
+    });
+  });
+
   describe("Withdraw", function () {
     beforeEach(async function () {
-      const { shodaqo, sdqCheckin, owner, minter, accounts } = await this.loadFixture(deploySDQCheckInFixture);
+      const { shodaqo, sdqCheckin, owner, accounts } = await this.loadFixture(deploySDQCheckInFixture);
       this.shodaqo = shodaqo;
       this.sdqCheckin = sdqCheckin;
       this.owner = owner;
-      this.minter = minter;
       this.accounts = accounts;
     });
 
@@ -112,11 +150,10 @@ describe("SDQCheckIn", function () {
 
   describe("CheckIn", function () {
     beforeEach(async function () {
-      const { shodaqo, sdqCheckin, owner, minter, accounts } = await this.loadFixture(deploySDQCheckInFixture);
+      const { shodaqo, sdqCheckin, owner, accounts } = await this.loadFixture(deploySDQCheckInFixture);
       this.shodaqo = shodaqo;
       this.sdqCheckin = sdqCheckin;
       this.owner = owner;
-      this.minter = minter;
       this.accounts = accounts;
     });
 
