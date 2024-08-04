@@ -7,6 +7,7 @@ type Fixture<T> = () => Promise<T>;
 
 declare module "mocha" {
   export interface Context {
+    // Contracts
     shodaqo: Shodaqo;
     sdqCheckin: SDQCheckIn;
     sdqCharity: SDQCharity;
@@ -18,6 +19,7 @@ declare module "mocha" {
     owner: HardhatEthersSigner;
     minter: HardhatEthersSigner;
     accounts: HardhatEthersSigner[];
+    deployedAssets: AssetToken[];
   }
 }
 

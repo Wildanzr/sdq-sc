@@ -40,10 +40,13 @@ contract TokenManagement is AccessControl {
      * @param name The name of the token.
      */
     function addToken(address token, string memory name) external onlyRole(EDITOR_ROLE) {
+        if (token == address(0)) {
+            revert ValidationError("Token address cannot be zero");
+        }
         if (bytes(name).length == 0) {
             revert ValidationError("Name cannot be empty");
         }
-        if (tokenIds.set(token, 1)) {
+        if (_isTokenAvailable(token)) {
             revert ValidationError("Token already exists");
         }
         tokenNames[token] = name;
@@ -84,5 +87,9 @@ contract TokenManagement is AccessControl {
      */
     function _isTokenAvailable(address token) internal view returns (bool) {
         return tokenIds.contains(token);
+    }
+
+    function isTokenAvailable(address token) external view returns (bool) {
+        return _isTokenAvailable(token);
     }
 }
