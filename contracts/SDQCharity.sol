@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.9;
 
-import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
@@ -13,10 +12,10 @@ error InsufficientBalance(address user, uint256 available, uint256 required);
 error InvalidToken(address token);
 error ValidationFailed(address user, string reason);
 
-contract SDQCharity is TokenManagement, AccessControl, Pausable, ReentrancyGuard {
+contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    bytes32 public constant EDITOR_ROLE = keccak256("EDITOR_ROLE");
+    bytes32 private constant EDITOR_ROLE = keccak256("EDITOR_ROLE");
     uint256 public numberOfCampaigns;
 
     struct Campaign {
@@ -24,10 +23,13 @@ contract SDQCharity is TokenManagement, AccessControl, Pausable, ReentrancyGuard
         string title;
         string details;
         uint256 target;
+        uint256 donators;
         uint256 created;
+        uint256 updated;
         bool paused;
         bool claimed;
         mapping(address token => uint256 amount) donations;
+        mapping(address user => uint32 count) donationsCount;
     }
 
     mapping(address user => bool isBlacklisted) public blacklisted;
@@ -41,6 +43,14 @@ contract SDQCharity is TokenManagement, AccessControl, Pausable, ReentrancyGuard
         address token,
         string name,
         string message,
+        uint256 timestamp
+    );
+    event CampaignCreated(
+        address indexed owner,
+        uint256 campaignId,
+        string title,
+        string details,
+        uint256 target,
         uint256 timestamp
     );
 
@@ -65,6 +75,10 @@ contract SDQCharity is TokenManagement, AccessControl, Pausable, ReentrancyGuard
         verified[user] = false;
     }
 
+    function isVerifiedUser(address user) external view returns (bool) {
+        return verified[user];
+    }
+
     function createCampaign(string memory title, string memory details, uint256 target) external whenNotPaused {
         if (blacklisted[msg.sender]) {
             revert AccountError(msg.sender, "You are blacklisted");
@@ -80,6 +94,8 @@ contract SDQCharity is TokenManagement, AccessControl, Pausable, ReentrancyGuard
         campaign.details = details;
         campaign.target = target;
         campaign.created = block.timestamp;
+        campaign.updated = block.timestamp;
+        emit CampaignCreated(msg.sender, numberOfCampaigns, title, details, target, block.timestamp);
     }
 
     function donateWithToken(
@@ -111,8 +127,15 @@ contract SDQCharity is TokenManagement, AccessControl, Pausable, ReentrancyGuard
             revert AccountError(msg.sender, "Insufficient allowance");
         }
 
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         campaign.donations[token] += amount;
+        if (campaign.donationsCount[msg.sender] == 0) {
+            campaign.donators++;
+            campaign.donationsCount[msg.sender] = 1;
+        } else {
+            campaign.donationsCount[msg.sender]++;
+        }
+
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         emit Donation(msg.sender, campaignId, amount, token, name, message, block.timestamp);
         return true;
     }

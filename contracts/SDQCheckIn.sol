@@ -41,6 +41,7 @@ contract SDQCheckIn is AccessControl, Pausable, ReentrancyGuard {
      */
     constructor(address sdq) {
         sdqToken = IERC20(sdq);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(EDITOR_ROLE, msg.sender);
 
         dailyClaimAmount[0] = 1.25 * 10 ** 18;

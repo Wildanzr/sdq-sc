@@ -3,7 +3,6 @@ pragma solidity >=0.8.9;
 
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { EnumerableMap } from "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import { ITokenManagement } from "./interface/ITokenManagement.sol";
 
 error ValidationError(string message);
 
@@ -11,7 +10,7 @@ error ValidationError(string message);
  * @title TokenManagement
  * @dev A contract for managing tokens with role-based access control.
  */
-contract TokenManagement is AccessControl, ITokenManagement {
+contract TokenManagement is AccessControl {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
     bytes32 private constant EDITOR_ROLE = keccak256("EDITOR_ROLE");
 
