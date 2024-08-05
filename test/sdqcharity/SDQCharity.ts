@@ -92,11 +92,12 @@ describe("SDQCharity", function () {
 
   describe("Add Token", function () {
     beforeEach(async function () {
-      const { sdqCharity, owner, accounts, deployedAssets } = await this.loadFixture(deploySDQCharityFixture);
+      const { sdqCharity, owner, accounts, deployedAssets, assets } = await this.loadFixture(deploySDQCharityFixture);
       this.sdqCharity = sdqCharity;
       this.owner = owner;
       this.accounts = accounts;
       this.deployedAssets = deployedAssets;
+      this.assets = assets;
     });
 
     it("Should add token", async function () {
@@ -105,6 +106,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "TokenAdded",
       );
+      expect(await this.sdqCharity.getAvailableTokens()).to.be.lengthOf(1);
     });
 
     it("Should fail to add token because didn't have permission", async function () {
@@ -125,11 +127,72 @@ describe("SDQCharity", function () {
       ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationError");
     });
 
-    // it("Should fail to add token because token already added", async function () {
-    //   await this.sdqCharity.connect(this.owner).addToken(await this.deployedAssets[0].getAddress(), "USDC");
-    //   await expect(
-    //     this.sdqCharity.connect(this.owner).addToken(await this.deployedAssets[0].getAddress(), "USDC"),
-    //   ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationError");
-    // });
+    it("Should fail to add token because token already added", async function () {
+      const address = await this.deployedAssets[0].getAddress();
+      await expect(this.sdqCharity.connect(this.owner).addToken(address, "USDC")).to.be.emit(
+        this.sdqCharity,
+        "TokenAdded",
+      );
+      expect(await this.sdqCharity.getAvailableTokens()).to.be.lengthOf(1);
+      await expect(this.sdqCharity.connect(this.owner).addToken(address, "USDC")).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationError",
+      );
+    });
+
+    it("Should have 4 available tokens", async function () {
+      for (let i = 0; i < this.deployedAssets.length; i++) {
+        await this.sdqCharity
+          .connect(this.owner)
+          .addToken(await this.deployedAssets[i].getAddress(), this.assets[i].ticker);
+      }
+      expect(await this.sdqCharity.getAvailableTokens()).to.be.lengthOf(4);
+    });
+  });
+
+  describe("Remove Token", function () {
+    beforeEach(async function () {
+      const { sdqCharity, owner, accounts, deployedAssets } = await this.loadFixture(deploySDQCharityFixture);
+      this.sdqCharity = sdqCharity;
+      this.owner = owner;
+      this.accounts = accounts;
+      this.deployedAssets = deployedAssets;
+    });
+
+    it("Should remove token", async function () {
+      const address = await this.deployedAssets[0].getAddress();
+      await this.sdqCharity.connect(this.owner).addToken(address, "USDC");
+      expect(await this.sdqCharity.getAvailableTokens()).to.be.lengthOf(1);
+      await expect(this.sdqCharity.connect(this.owner).removeToken(address)).to.be.emit(
+        this.sdqCharity,
+        "TokenRemoved",
+      );
+      expect(await this.sdqCharity.getAvailableTokens()).to.be.lengthOf(0);
+    });
+
+    it("Should fail to remove token because didn't have permission", async function () {
+      const address = await this.deployedAssets[0].getAddress();
+      await this.sdqCharity.connect(this.owner).addToken(address, "USDC");
+      expect(await this.sdqCharity.getAvailableTokens()).to.be.lengthOf(1);
+      await expect(this.sdqCharity.connect(this.accounts[0]).removeToken(address)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccessControlUnauthorizedAccount",
+      );
+    });
+
+    it("Should fail to remove token because token doesn't exist", async function () {
+      const address = await this.deployedAssets[0].getAddress();
+      await expect(this.sdqCharity.connect(this.owner).removeToken(address)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationError",
+      );
+    });
+
+    it("Should fail to remove token because token address is zero", async function () {
+      await expect(this.sdqCharity.connect(this.owner).removeToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationError",
+      );
+    });
   });
 });

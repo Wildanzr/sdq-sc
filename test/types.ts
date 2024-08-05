@@ -5,6 +5,13 @@ import { AssetToken, SDQCharity, SDQCheckIn, Shodaqo } from "../types";
 
 type Fixture<T> = () => Promise<T>;
 
+interface Asset {
+  name: string;
+  ticker: string;
+  mintAmount: number;
+  decimals: number;
+}
+
 declare module "mocha" {
   export interface Context {
     // Contracts
@@ -20,6 +27,7 @@ declare module "mocha" {
     minter: HardhatEthersSigner;
     accounts: HardhatEthersSigner[];
     deployedAssets: AssetToken[];
+    assets: Asset[];
   }
 }
 

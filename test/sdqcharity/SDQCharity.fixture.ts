@@ -30,6 +30,18 @@ export async function deploySDQCharityFixture() {
       mintAmount: 100,
       decimals: 6,
     },
+    {
+      name: "Tether USD on Axelar",
+      ticker: "axlUSDT",
+      mintAmount: 100,
+      decimals: 6,
+    },
+    {
+      name: "USD Coin on Axelar",
+      ticker: "axlUSDC",
+      mintAmount: 100,
+      decimals: 6,
+    },
   ];
   const deployedAssets: AssetToken[] = [];
   for (const item of assets) {
@@ -42,5 +54,5 @@ export async function deploySDQCharityFixture() {
   const SDQCharity = (await ethers.getContractFactory("SDQCharity")) as unknown as SDQCharity__factory;
   const sdqCharity = (await SDQCharity.deploy()) as SDQCharity;
 
-  return { deployedAssets, sdqCharity, owner, editor, accounts };
+  return { assets, deployedAssets, sdqCharity, owner, editor, accounts };
 }

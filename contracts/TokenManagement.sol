@@ -50,6 +50,7 @@ contract TokenManagement is AccessControl {
             revert ValidationError("Token already exists");
         }
         tokenNames[token] = name;
+        tokenIds.set(token, 0);
         emit TokenAdded(token, name);
     }
 
@@ -61,6 +62,8 @@ contract TokenManagement is AccessControl {
         if (!tokenIds.remove(token)) {
             revert ValidationError("Token does not exist");
         }
+        delete tokenNames[token];
+        tokenIds.remove(token);
         emit TokenRemoved(token);
     }
 
@@ -87,9 +90,5 @@ contract TokenManagement is AccessControl {
      */
     function _isTokenAvailable(address token) internal view returns (bool) {
         return tokenIds.contains(token);
-    }
-
-    function isTokenAvailable(address token) external view returns (bool) {
-        return _isTokenAvailable(token);
     }
 }
