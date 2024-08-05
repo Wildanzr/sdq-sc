@@ -16,7 +16,7 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     bytes32 private constant EDITOR_ROLE = keccak256("EDITOR_ROLE");
-    uint256 public numberOfCampaigns;
+    uint32 public numberOfCampaigns;
 
     struct Campaign {
         address owner;
@@ -28,15 +28,20 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
         uint256 updated;
         bool paused;
         bool claimed;
-        mapping(address token => uint256 amount) donations;
-        mapping(address user => uint32 count) donationsCount;
+    }
+
+    struct Donation {
+        address donor;
+        uint256 amount;
     }
 
     mapping(address user => bool isBlacklisted) public blacklisted;
     mapping(address user => bool isVerified) public verified;
-    mapping(uint256 id => Campaign campaign) public campaigns;
+    mapping(uint32 id => Campaign campaign) public campaigns;
+    mapping(uint32 id => mapping(address token => uint256) donations) public campaignDonations;
+    mapping(uint32 id => mapping(address user => uint32) donationsCount) public campaignDonationsCount;
 
-    event Donation(
+    event CampaignDonation(
         address indexed donor,
         uint256 campaignId,
         uint256 amount,
@@ -45,6 +50,7 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
         string message,
         uint256 timestamp
     );
+
     event CampaignCreated(
         address indexed owner,
         uint256 campaignId,
@@ -57,6 +63,14 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
     constructor() TokenManagement(msg.sender) {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(EDITOR_ROLE, msg.sender);
+    }
+
+    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
     }
 
     function banUser(address user) external onlyRole(EDITOR_ROLE) {
@@ -99,7 +113,7 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
     }
 
     function donateWithToken(
-        uint256 campaignId,
+        uint32 campaignId,
         uint256 amount,
         address token,
         string memory name,
@@ -127,16 +141,26 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
             revert AccountError(msg.sender, "Insufficient allowance");
         }
 
-        campaign.donations[token] += amount;
-        if (campaign.donationsCount[msg.sender] == 0) {
+        // campaign.donations[token] += amount;
+        campaignDonations[campaignId][token] += amount;
+
+        if (campaignDonationsCount[campaignId][msg.sender] == 0) {
             campaign.donators++;
-            campaign.donationsCount[msg.sender] = 1;
+            campaignDonationsCount[campaignId][msg.sender] == 1;
         } else {
-            campaign.donationsCount[msg.sender]++;
+            campaignDonationsCount[campaignId][msg.sender]++;
         }
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
-        emit Donation(msg.sender, campaignId, amount, token, name, message, block.timestamp);
+        emit CampaignDonation(msg.sender, campaignId, amount, token, name, message, block.timestamp);
         return true;
+    }
+
+    function getCampaignDetails(uint32 campaignId) external view returns (Campaign memory) {
+        if (campaignId == 0 || campaignId > numberOfCampaigns) {
+            revert ValidationFailed(msg.sender, "Invalid campaign ID");
+        }
+
+        return campaigns[campaignId];
     }
 }

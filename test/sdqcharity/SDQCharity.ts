@@ -53,6 +53,43 @@ describe("SDQCharity", function () {
     });
   });
 
+  describe("Pause and Unpause", function () {
+    beforeEach(async function () {
+      const { sdqCharity, owner, accounts } = await this.loadFixture(deploySDQCharityFixture);
+      this.sdqCharity = sdqCharity;
+      this.owner = owner;
+      this.accounts = accounts;
+    });
+
+    it("Should pause", async function () {
+      await this.sdqCharity.connect(this.owner).pause();
+      expect(await this.sdqCharity.connect(this.owner).paused()).to.be.true;
+    });
+
+    it("Should unpause", async function () {
+      await this.sdqCharity.connect(this.owner).pause();
+      expect(await this.sdqCharity.connect(this.owner).paused()).to.be.true;
+      await this.sdqCharity.connect(this.owner).unpause();
+      expect(await this.sdqCharity.connect(this.owner).paused()).to.be.false;
+    });
+
+    it("Should fail to pause because didn't have permission", async function () {
+      await expect(this.sdqCharity.connect(this.accounts[0]).pause()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccessControlUnauthorizedAccount",
+      );
+    });
+
+    it("Should fail to unpause because didn't have permission", async function () {
+      await this.sdqCharity.connect(this.owner).pause();
+      expect(await this.sdqCharity.connect(this.owner).paused()).to.be.true;
+      await expect(this.sdqCharity.connect(this.accounts[0]).unpause()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccessControlUnauthorizedAccount",
+      );
+    });
+  });
+
   describe("Ban and Unban", function () {
     beforeEach(async function () {
       const { sdqCharity, owner, accounts } = await this.loadFixture(deploySDQCharityFixture);
@@ -144,7 +181,6 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "TokenAdded",
       );
-      expect(await this.sdqCharity.getAvailableTokens()).to.be.lengthOf(1);
     });
 
     it("Should fail to add token because didn't have permission", async function () {
@@ -171,7 +207,11 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "TokenAdded",
       );
-      expect(await this.sdqCharity.getAvailableTokens()).to.be.lengthOf(1);
+      const tokens = await this.sdqCharity.getAvailableTokens();
+      expect(tokens[0].length).to.be.equal(1);
+      expect(tokens[1].length).to.be.equal(1);
+      expect(tokens[0][0]).to.be.equal(address);
+      expect(tokens[1][0]).to.be.equal("USDC");
       await expect(this.sdqCharity.connect(this.owner).addToken(address, "USDC")).to.be.revertedWithCustomError(
         this.sdqCharity,
         "ValidationError",
@@ -184,7 +224,13 @@ describe("SDQCharity", function () {
           .connect(this.owner)
           .addToken(await this.deployedAssets[i].getAddress(), this.assets[i].ticker);
       }
-      expect(await this.sdqCharity.getAvailableTokens()).to.be.lengthOf(4);
+      const tokens = await this.sdqCharity.getAvailableTokens();
+      expect(tokens[0].length).to.be.equal(4);
+      expect(tokens[1].length).to.be.equal(4);
+      for (let i = 0; i < tokens[0].length; i++) {
+        expect(tokens[0][i]).to.be.equal(await this.deployedAssets[i].getAddress());
+        expect(tokens[1][i]).to.be.equal(this.assets[i].ticker);
+      }
     });
   });
 
@@ -200,18 +246,28 @@ describe("SDQCharity", function () {
     it("Should remove token", async function () {
       const address = await this.deployedAssets[0].getAddress();
       await this.sdqCharity.connect(this.owner).addToken(address, "USDC");
-      expect(await this.sdqCharity.getAvailableTokens()).to.be.lengthOf(1);
+      let tokens = await this.sdqCharity.getAvailableTokens();
+      expect(tokens[0].length).to.be.equal(1);
+      expect(tokens[1].length).to.be.equal(1);
+      expect(tokens[0][0]).to.be.equal(address);
+      expect(tokens[1][0]).to.be.equal("USDC");
       await expect(this.sdqCharity.connect(this.owner).removeToken(address)).to.be.emit(
         this.sdqCharity,
         "TokenRemoved",
       );
-      expect(await this.sdqCharity.getAvailableTokens()).to.be.lengthOf(0);
+      tokens = await this.sdqCharity.getAvailableTokens();
+      expect(tokens[0].length).to.be.equal(0);
+      expect(tokens[1].length).to.be.equal(0);
     });
 
     it("Should fail to remove token because didn't have permission", async function () {
       const address = await this.deployedAssets[0].getAddress();
       await this.sdqCharity.connect(this.owner).addToken(address, "USDC");
-      expect(await this.sdqCharity.getAvailableTokens()).to.be.lengthOf(1);
+      const tokens = await this.sdqCharity.getAvailableTokens();
+      expect(tokens[0].length).to.be.equal(1);
+      expect(tokens[1].length).to.be.equal(1);
+      expect(tokens[0][0]).to.be.equal(address);
+      expect(tokens[1][0]).to.be.equal("USDC");
       await expect(this.sdqCharity.connect(this.accounts[0]).removeToken(address)).to.be.revertedWithCustomError(
         this.sdqCharity,
         "AccessControlUnauthorizedAccount",
@@ -230,6 +286,72 @@ describe("SDQCharity", function () {
       await expect(this.sdqCharity.connect(this.owner).removeToken(ethers.ZeroAddress)).to.be.revertedWithCustomError(
         this.sdqCharity,
         "ValidationError",
+      );
+    });
+  });
+
+  describe("Create Campaign", function () {
+    beforeEach(async function () {
+      const { sdqCharity, owner, accounts, deployedAssets } = await this.loadFixture(deploySDQCharityFixture);
+      this.sdqCharity = sdqCharity;
+      this.owner = owner;
+      this.accounts = accounts;
+      this.deployedAssets = deployedAssets;
+    });
+
+    it("Should unable to create campaign because still paused", async function () {
+      await this.sdqCharity.connect(this.owner).pause();
+      expect(await this.sdqCharity.connect(this.owner).paused()).to.be.true;
+      await expect(
+        this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", 100),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "EnforcedPause");
+    });
+
+    it("Should unable to create campaign because user is banned", async function () {
+      await this.sdqCharity.connect(this.owner).banUser(this.accounts[0].address);
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", 100),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "AccountError");
+    });
+
+    it("Should unable to create campaign because title is empty", async function () {
+      await expect(this.sdqCharity.connect(this.owner).createCampaign("", "Test", 100)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationFailed",
+      );
+    });
+
+    it("Should unable to create campaign because details is empty", async function () {
+      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "", 100)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationFailed",
+      );
+    });
+
+    it("Should unable to create campaign because target is 0", async function () {
+      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", 0)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationFailed",
+      );
+    });
+
+    it("Should create campaign correctly", async function () {
+      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", 100)).to.be.emit(
+        this.sdqCharity,
+        "CampaignCreated",
+      );
+      const res = await this.sdqCharity.getCampaignDetails(1);
+      expect(res.title).to.be.equal("Test");
+      expect(res.details).to.be.equal("Test");
+      expect(res.target).to.be.equal(100);
+      expect(res.owner).to.be.equal(this.owner.address);
+      await expect(this.sdqCharity.getCampaignDetails(0)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationFailed",
+      );
+      await expect(this.sdqCharity.getCampaignDetails(2)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationFailed",
       );
     });
   });

@@ -14,13 +14,15 @@ contract TokenManagement is AccessControl {
     using EnumerableMap for EnumerableMap.AddressToUintMap;
     bytes32 private constant EDITOR_ROLE = keccak256("EDITOR_ROLE");
 
+    struct TokenDetails {
+        address token;
+        string name;
+    }
+
     EnumerableMap.AddressToUintMap private tokenIds;
     mapping(address token => string name) public tokenNames;
-
-    struct TokenDetails {
-        address tokenAddr;
-        string tokenName;
-    }
+    mapping(string name => address token) public tokenAddresses;
+    TokenDetails[] public tokens;
 
     event TokenAdded(address indexed token, string name);
     event TokenRemoved(address indexed token);
@@ -50,6 +52,8 @@ contract TokenManagement is AccessControl {
             revert ValidationError("Token already exists");
         }
         tokenNames[token] = name;
+        tokenAddresses[name] = token;
+        tokens.push(TokenDetails(token, name));
         tokenIds.set(token, 0);
         emit TokenAdded(token, name);
     }
@@ -68,19 +72,29 @@ contract TokenManagement is AccessControl {
     }
 
     /**
-     * @dev Get the details of all available tokens.
-     * @return An array of TokenDetails structs.
+     * @dev Get the available tokens.
+     * @return _tokens An array of token addresses.
+     * @return _names An array of token names.
      */
-    function getAvailableTokens() external view returns (TokenDetails[] memory) {
-        TokenDetails[] memory tokens = new TokenDetails[](tokenIds.length());
-        for (uint256 i = 0; i < tokenIds.length(); ) {
-            (address token, ) = tokenIds.at(i);
-            tokens[i] = TokenDetails(token, tokenNames[token]);
-            unchecked {
-                i += 1;
-            }
+    function getAvailableTokens() external view returns (address[] memory _tokens, string[] memory _names) {
+        return _getAvailableTokens();
+    }
+
+    /**
+     * @dev Get the available tokens.
+     * @return _tokens An array of token addresses.
+     * @return _names An array of token names.
+     */
+    function _getAvailableTokens() internal view returns (address[] memory _tokens, string[] memory _names) {
+        address[] memory _tokenAddresses = new address[](tokenIds.length());
+        string[] memory _tokenNames = new string[](tokenIds.length());
+
+        for (uint256 i = 0; i < tokenIds.length(); i++) {
+            _tokenNames[i] = tokens[i].name;
+            _tokenAddresses[i] = tokens[i].token;
         }
-        return tokens;
+
+        return (_tokenAddresses, _tokenNames);
     }
 
     /**
