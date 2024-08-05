@@ -292,11 +292,12 @@ describe("SDQCharity", function () {
 
   describe("Create Campaign", function () {
     beforeEach(async function () {
-      const { sdqCharity, owner, accounts, deployedAssets } = await this.loadFixture(deploySDQCharityFixture);
+      const { sdqCharity, owner, accounts, deployedAssets, assets } = await this.loadFixture(deploySDQCharityFixture);
       this.sdqCharity = sdqCharity;
       this.owner = owner;
       this.accounts = accounts;
       this.deployedAssets = deployedAssets;
+      this.assets = assets;
     });
 
     it("Should unable to create campaign because still paused", async function () {

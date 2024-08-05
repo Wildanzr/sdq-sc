@@ -163,4 +163,19 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
 
         return campaigns[campaignId];
     }
+
+    function getCampaignDonations(uint32 id) external view returns (address[] memory tokens, uint256[] memory amounts) {
+        if (id == 0 || id > numberOfCampaigns) {
+            revert ValidationFailed(msg.sender, "Invalid campaign ID");
+        }
+
+        (address[] memory _tokens, ) = _getAvailableTokens();
+        uint256[] memory _amounts = new uint256[](_tokens.length);
+
+        for (uint256 i = 0; i < _tokens.length; i++) {
+            _amounts[i] = campaignDonations[id][_tokens[i]];
+        }
+
+        return (_tokens, _amounts);
+    }
 }
