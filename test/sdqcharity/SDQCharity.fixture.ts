@@ -46,7 +46,7 @@ export async function deploySDQCharityFixture() {
   const deployedAssets: AssetToken[] = [];
   for (const item of assets) {
     const AssetToken = (await ethers.getContractFactory("AssetToken")) as unknown as AssetToken__factory;
-    const assetToken = (await AssetToken.deploy(owner.address, item.name, item.ticker)) as AssetToken;
+    const assetToken = (await AssetToken.deploy(owner.address, item.name, item.ticker, item.mintAmount)) as AssetToken;
     deployedAssets.push(assetToken);
   }
 

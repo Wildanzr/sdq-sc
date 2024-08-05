@@ -10,9 +10,15 @@ contract AssetToken is ERC20, ERC20Burnable, AccessControl, ERC20Permit {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     uint256 public mintAmount;
 
-    constructor(address defaultAdmin, string memory name, string memory ticker) ERC20(name, ticker) ERC20Permit(name) {
+    constructor(
+        address defaultAdmin,
+        string memory name,
+        string memory ticker,
+        uint256 amount
+    ) ERC20(name, ticker) ERC20Permit(name) {
         _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
         _grantRole(MINTER_ROLE, defaultAdmin);
+        mintAmount = amount;
     }
 
     function mint() external {

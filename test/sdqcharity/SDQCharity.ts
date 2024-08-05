@@ -15,6 +15,44 @@ describe("SDQCharity", function () {
     this.loadFixture = loadFixture;
   });
 
+  describe("Token assets", function () {
+    beforeEach(async function () {
+      const { owner, accounts, deployedAssets, assets } = await this.loadFixture(deploySDQCharityFixture);
+      this.owner = owner;
+      this.accounts = accounts;
+      this.deployedAssets = deployedAssets;
+      this.assets = assets;
+    });
+
+    it("Should return correct decimal", async function () {
+      for (let i = 0; i < this.deployedAssets.length; i++) {
+        expect(await this.deployedAssets[i].decimals()).to.be.equal(this.assets[i].decimals);
+      }
+    });
+
+    it("Should unable to mintTo because it doesn't have permission", async function () {
+      for (let i = 0; i < this.deployedAssets.length; i++) {
+        await expect(
+          this.deployedAssets[i].connect(this.accounts[0]).mintTo(this.owner.address, 100),
+        ).to.be.revertedWithCustomError(this.deployedAssets[i], "AccessControlUnauthorizedAccount");
+      }
+    });
+
+    it("Should mintTo", async function () {
+      for (let i = 0; i < this.deployedAssets.length; i++) {
+        await this.deployedAssets[i].connect(this.owner).mintTo(this.accounts[0].address, 100);
+        expect(await this.deployedAssets[i].balanceOf(this.accounts[0].address)).to.be.equal(100);
+      }
+    });
+
+    it("Should mint", async function () {
+      for (let i = 0; i < this.deployedAssets.length; i++) {
+        await this.deployedAssets[i].connect(this.owner).mint();
+        expect(await this.deployedAssets[i].balanceOf(this.owner.address)).to.be.equal(this.assets[i].mintAmount);
+      }
+    });
+  });
+
   describe("Ban and Unban", function () {
     beforeEach(async function () {
       const { sdqCharity, owner, accounts } = await this.loadFixture(deploySDQCharityFixture);
