@@ -356,4 +356,155 @@ describe("SDQCharity", function () {
       );
     });
   });
+
+  describe("Donate", function () {
+    beforeEach(async function () {
+      const { sdqCharity, owner, accounts, deployedAssets, assets } = await this.loadFixture(deploySDQCharityFixture);
+      this.sdqCharity = sdqCharity;
+      this.owner = owner;
+      this.accounts = accounts;
+      this.deployedAssets = deployedAssets;
+      this.assets = assets;
+
+      for (let i = 0; i < this.deployedAssets.length - 1; i++) {
+        await this.sdqCharity
+          .connect(this.owner)
+          .addToken(await this.deployedAssets[i].getAddress(), this.assets[i].ticker);
+
+        const amount = 1000 * 10 ** 6;
+        await this.deployedAssets[i].connect(this.owner).mintTo(this.accounts[0].address, amount);
+        await this.deployedAssets[i].connect(this.accounts[0]).approve(await this.sdqCharity.getAddress(), amount);
+      }
+
+      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", 100)).to.be.emit(
+        this.sdqCharity,
+        "CampaignCreated",
+      );
+    });
+
+    it("Should unable to donate because paused", async function () {
+      const donateAmount = 100 * 10 ** 6;
+      await this.sdqCharity.connect(this.owner).pause();
+      await expect(
+        this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(1, donateAmount, await this.deployedAssets[0].getAddress(), "Anonymous", "Hello World"),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "EnforcedPause");
+    });
+
+    it("Should unable to donate because user is banned", async function () {
+      const donateAmount = 100 * 10 ** 6;
+      await this.sdqCharity.connect(this.owner).banUser(this.accounts[0].address);
+      await expect(
+        this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(1, donateAmount, await this.deployedAssets[0].getAddress(), "Anonymous", "Hello World"),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "AccountError");
+    });
+
+    it("Should unable to donate because campaign doesn't exist", async function () {
+      const donateAmount = 100 * 10 ** 6;
+      await expect(
+        this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(0, donateAmount, await this.deployedAssets[0].getAddress(), "Anonymous", "Hello World"),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
+      await expect(
+        this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(2, donateAmount, await this.deployedAssets[0].getAddress(), "Anonymous", "Hello World"),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
+    });
+
+    it("Should unable to donate because token doesn't exist", async function () {
+      const mintAmount = 1000 * 10 ** 6;
+      const donateAmount = 100 * 10 ** 6;
+      await this.deployedAssets[3].connect(this.owner).mintTo(this.accounts[0].address, mintAmount);
+      await this.deployedAssets[3].connect(this.accounts[0]).approve(await this.sdqCharity.getAddress(), mintAmount);
+      await expect(
+        this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(1, donateAmount, await this.deployedAssets[3].getAddress(), "Anonymous", "Hello World"),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "InvalidToken");
+    });
+
+    it("Should unable to donate because amount is 0", async function () {
+      const donateAmount = 0;
+      await expect(
+        this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(1, donateAmount, await this.deployedAssets[0].getAddress(), "Anonymous", "Hello World"),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
+    });
+
+    it("Should unable to donate because token allowance is less than donate amount", async function () {
+      const donateAmount = 1100 * 10 ** 6;
+      const mintAmount = 1000 * 10 ** 6;
+      await this.deployedAssets[0].connect(this.owner).mintTo(this.accounts[0].address, mintAmount);
+      await expect(
+        this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(1, donateAmount, await this.deployedAssets[0].getAddress(), "Anonymous", "Hello World"),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "AccountError");
+    });
+
+    it("Should failed to get campaign donations because campaign doesn't exist", async function () {
+      await expect(this.sdqCharity.getCampaignDonations(0)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationFailed",
+      );
+      await expect(this.sdqCharity.getCampaignDonations(2)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationFailed",
+      );
+    });
+
+    it("Should donate correctly", async function () {
+      const donateAmount = 100 * 10 ** 6;
+      await expect(
+        this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(1, donateAmount, await this.deployedAssets[0].getAddress(), "Anonymous", "Hello World"),
+      ).to.be.emit(this.sdqCharity, "CampaignDonation");
+
+      const donations = await this.sdqCharity.getCampaignDonations(1);
+      const addrIndex = donations[0].indexOf(await this.deployedAssets[0].getAddress());
+      expect(donations[1][addrIndex]).to.be.equal(donateAmount);
+    });
+
+    it("Should donate correctly with multiple tokens", async function () {
+      const donateAmount = 100 * 10 ** 6;
+      await expect(
+        this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(1, donateAmount, await this.deployedAssets[0].getAddress(), "Anonymous", "Hello World"),
+      ).to.be.emit(this.sdqCharity, "CampaignDonation");
+
+      await expect(
+        this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(1, donateAmount, await this.deployedAssets[0].getAddress(), "Anonymous", "Hello World"),
+      ).to.be.emit(this.sdqCharity, "CampaignDonation");
+
+      await expect(
+        this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(1, donateAmount, await this.deployedAssets[1].getAddress(), "Anonymous", "Hello World"),
+      ).to.be.emit(this.sdqCharity, "CampaignDonation");
+
+      await expect(
+        this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(1, donateAmount, await this.deployedAssets[2].getAddress(), "Anonymous", "Hello World"),
+      ).to.be.emit(this.sdqCharity, "CampaignDonation");
+
+      const donations = await this.sdqCharity.getCampaignDonations(1);
+      const addrIndex0 = donations[0].indexOf(await this.deployedAssets[0].getAddress());
+      const addrIndex1 = donations[0].indexOf(await this.deployedAssets[1].getAddress());
+      const addrIndex2 = donations[0].indexOf(await this.deployedAssets[2].getAddress());
+      expect(donations[1][addrIndex0]).to.be.equal(donateAmount * 2);
+      expect(donations[1][addrIndex1]).to.be.equal(donateAmount);
+      expect(donations[1][addrIndex2]).to.be.equal(donateAmount);
+    });
+  });
 });

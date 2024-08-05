@@ -118,7 +118,7 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
         address token,
         string memory name,
         string memory message
-    ) external whenNotPaused returns (bool) {
+    ) external whenNotPaused {
         if (blacklisted[msg.sender]) {
             revert AccountError(msg.sender, "You are blacklisted");
         }
@@ -127,7 +127,7 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
             revert ValidationFailed(msg.sender, "Invalid campaign ID");
         }
 
-        if (_isTokenAvailable(token)) {
+        if (!_isTokenAvailable(token)) {
             revert InvalidToken(token);
         }
 
@@ -141,19 +141,16 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
             revert AccountError(msg.sender, "Insufficient allowance");
         }
 
-        // campaign.donations[token] += amount;
         campaignDonations[campaignId][token] += amount;
-
         if (campaignDonationsCount[campaignId][msg.sender] == 0) {
             campaign.donators++;
-            campaignDonationsCount[campaignId][msg.sender] == 1;
+            campaignDonationsCount[campaignId][msg.sender] = 1;
         } else {
             campaignDonationsCount[campaignId][msg.sender]++;
         }
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
         emit CampaignDonation(msg.sender, campaignId, amount, token, name, message, block.timestamp);
-        return true;
     }
 
     function getCampaignDetails(uint32 campaignId) external view returns (Campaign memory) {
