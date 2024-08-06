@@ -357,6 +357,198 @@ describe("SDQCharity", function () {
     });
   });
 
+  describe("Pause Campaign", function () {
+    beforeEach(async function () {
+      const { sdqCharity, owner, accounts, deployedAssets, assets } = await this.loadFixture(deploySDQCharityFixture);
+      this.sdqCharity = sdqCharity;
+      this.owner = owner;
+      this.accounts = accounts;
+      this.deployedAssets = deployedAssets;
+      this.assets = assets;
+
+      await expect(this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", 100)).to.be.emit(
+        this.sdqCharity,
+        "CampaignCreated",
+      );
+    });
+
+    it("Should failed to pause campaign because contract is paused", async function () {
+      await this.sdqCharity.connect(this.owner).pause();
+      await expect(this.sdqCharity.connect(this.accounts[0]).pauseCampaign(1)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "EnforcedPause",
+      );
+    })
+
+    it("Should failed to pause campaign because user is banned", async function () {
+      await this.sdqCharity.connect(this.owner).banUser(this.accounts[0].address);
+      await expect(this.sdqCharity.connect(this.accounts[0]).pauseCampaign(1)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should failed to pause campaign because campaign doesn't exist", async function () {
+      await expect(this.sdqCharity.connect(this.accounts[0]).pauseCampaign(0)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationFailed",
+      );
+      await expect(this.sdqCharity.connect(this.accounts[0]).pauseCampaign(2)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationFailed",
+      );
+    })
+
+    it("Should failed to pause campaign because not the owner", async function () {
+      await expect(this.sdqCharity.connect(this.accounts[1]).pauseCampaign(1)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should pause campaign", async function () {
+      await expect(this.sdqCharity.connect(this.accounts[0]).pauseCampaign(1)).to.be.emit(
+        this.sdqCharity,
+        "CampaignPaused",
+      );
+      expect((await this.sdqCharity.getCampaignDetails(1)).paused).to.be.true;
+    })
+  })
+
+  describe("Unpause Campaign", function () {
+    beforeEach(async function () {
+      const { sdqCharity, owner, accounts, deployedAssets, assets } = await this.loadFixture(deploySDQCharityFixture);
+      this.sdqCharity = sdqCharity;
+      this.owner = owner;
+      this.accounts = accounts;
+      this.deployedAssets = deployedAssets;
+      this.assets = assets;
+
+      await expect(this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", 100)).to.be.emit(
+        this.sdqCharity,
+        "CampaignCreated",
+      );
+      await this.sdqCharity.connect(this.accounts[0]).pauseCampaign(1);
+    });
+
+    it("Should failed to unpause campaign because contract is paused", async function () {
+      await this.sdqCharity.connect(this.owner).pause();
+      await expect(this.sdqCharity.connect(this.accounts[0]).unpauseCampaign(1)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "EnforcedPause",
+      );
+    })
+
+    it("Should failed to unpause campaign because user is banned", async function () {
+      await this.sdqCharity.connect(this.owner).banUser(this.accounts[0].address);
+      await expect(this.sdqCharity.connect(this.accounts[0]).unpauseCampaign(1)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should failed to unpause campaign because campaign doesn't exist", async function () {
+      await expect(this.sdqCharity.connect(this.accounts[0]).unpauseCampaign(0)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationFailed",
+      );
+      await expect(this.sdqCharity.connect(this.accounts[0]).unpauseCampaign(2)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationFailed",
+      );
+    })
+
+    it("Should failed to unpause campaign because not the owner", async function () {
+      await expect(this.sdqCharity.connect(this.accounts[1]).unpauseCampaign(1)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should unpause campaign", async function () {
+      await expect(this.sdqCharity.connect(this.accounts[0]).unpauseCampaign(1)).to.be.emit(
+        this.sdqCharity,
+        "CampaignUnpaused",
+      );
+      expect((await this.sdqCharity.getCampaignDetails(1)).paused).to.be.false;
+    })
+  })
+
+  describe("Update Campaign", function () {
+    beforeEach(async function () {
+      const { sdqCharity, owner, accounts, deployedAssets, assets } = await this.loadFixture(deploySDQCharityFixture);
+      this.sdqCharity = sdqCharity;
+      this.owner = owner;
+      this.accounts = accounts;
+      this.deployedAssets = deployedAssets;
+      this.assets = assets;
+
+      await expect(this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", 100)).to.be.emit(
+        this.sdqCharity,
+        "CampaignCreated",
+      );
+    });
+
+    it("Should unable to update campaign because contract is paused", async function () {
+      await this.sdqCharity.connect(this.owner).pause();
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).updateCampaign(1, "Test1", "Test1", 200),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "EnforcedPause");
+    });
+
+    it("Should unable to update campaign because user is banned", async function () {
+      await this.sdqCharity.connect(this.owner).banUser(this.accounts[0].address);
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).updateCampaign(1, "Test1", "Test1", 200),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "AccountError");
+    });
+
+    it("Should unable to update campaign because campaign doesn't exist", async function () {
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).updateCampaign(0, "Test1", "Test1", 200),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).updateCampaign(2, "Test1", "Test1", 200),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
+    });
+
+    it("Should unable to update campaign because not the owner", async function () {
+      await expect(
+        this.sdqCharity.connect(this.accounts[1]).updateCampaign(1, "Test1", "Test1", 200),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "AccountError");
+    });
+
+    it("Should unable to update campaign because title is empty", async function () {
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).updateCampaign(1, "", "Test1", 200),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
+    });
+
+    it("Should unable to update campaign because details is empty", async function () {
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).updateCampaign(1, "Test1", "", 200),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
+    });
+
+    it("Should unable to update campaign because target is 0", async function () {
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).updateCampaign(1, "Test1", "Test1", 0),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
+    });
+
+    it("Should update campaign correctly", async function () {
+      await expect(this.sdqCharity.connect(this.accounts[0]).updateCampaign(1, "Test1", "Test1", 200)).to.be.emit(
+        this.sdqCharity,
+        "CampaignUpdated",
+      );
+      const res = await this.sdqCharity.getCampaignDetails(1);
+      expect(res.title).to.be.equal("Test1");
+      expect(res.details).to.be.equal("Test1");
+      expect(res.target).to.be.equal(200);
+      expect(res.owner).to.be.equal(this.accounts[0].address);
+    });
+  })
+
   describe("Donate", function () {
     beforeEach(async function () {
       const { sdqCharity, owner, accounts, deployedAssets, assets } = await this.loadFixture(deploySDQCharityFixture);
@@ -430,6 +622,16 @@ describe("SDQCharity", function () {
 
     it("Should unable to donate because amount is 0", async function () {
       const donateAmount = 0;
+      await expect(
+        this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(1, donateAmount, await this.deployedAssets[0].getAddress(), "Anonymous", "Hello World"),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
+    });
+
+    it("Should unable to donate because campaign is paused", async function () {
+      const donateAmount = 100 * 10 ** 6;
+      await this.sdqCharity.connect(this.owner).pauseCampaign(1);
       await expect(
         this.sdqCharity
           .connect(this.accounts[0])

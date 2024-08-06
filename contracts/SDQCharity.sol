@@ -50,7 +50,6 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
         string message,
         uint256 timestamp
     );
-
     event CampaignCreated(
         address indexed owner,
         uint256 campaignId,
@@ -59,6 +58,17 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
         uint256 target,
         uint256 timestamp
     );
+    event CampaignUpdated(
+        address indexed owner,
+        uint256 campaignId,
+        string title,
+        string details,
+        uint256 target,
+        uint256 timestamp
+    );
+    event CampaignPaused(address indexed owner, uint256 campaignId, uint256 timestamp);
+    event CampaignUnpaused(address indexed owner, uint256 campaignId, uint256 timestamp);
+    event CampaignClaimed(address indexed owner, uint256 campaignId, uint256 timestamp);
 
     constructor() TokenManagement(msg.sender) {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -110,6 +120,78 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
         campaign.created = block.timestamp;
         campaign.updated = block.timestamp;
         emit CampaignCreated(msg.sender, numberOfCampaigns, title, details, target, block.timestamp);
+    }
+
+    function updateCampaign(
+        uint32 id,
+        string memory title,
+        string memory details,
+        uint256 target
+    ) external whenNotPaused {
+        if (blacklisted[msg.sender]) {
+            revert AccountError(msg.sender, "You are blacklisted");
+        }
+
+        if (id == 0 || id > numberOfCampaigns) {
+            revert ValidationFailed(msg.sender, "Invalid campaign ID");
+        }
+
+        Campaign storage campaign = campaigns[id];
+        if (campaign.owner != msg.sender) {
+            revert AccountError(msg.sender, "You are not the owner");
+        }
+
+        if (campaign.claimed) {
+            revert ValidationFailed(msg.sender, "Campaign is already claimed");
+        }
+
+        if (bytes(title).length == 0 || bytes(details).length == 0 || target == 0) {
+            revert ValidationFailed(msg.sender, "Title, details, and target are required");
+        }
+
+        campaign.title = title;
+        campaign.details = details;
+        campaign.target = target;
+        campaign.updated = block.timestamp;
+        emit CampaignUpdated(msg.sender, id, title, details, target, block.timestamp);
+    }
+
+    function pauseCampaign(uint32 id) external whenNotPaused {
+        if (blacklisted[msg.sender]) {
+            revert AccountError(msg.sender, "You are blacklisted");
+        }
+
+        if (id == 0 || id > numberOfCampaigns) {
+            revert ValidationFailed(msg.sender, "Invalid campaign ID");
+        }
+
+        Campaign storage campaign = campaigns[id];
+        if (campaign.owner != msg.sender) {
+            revert AccountError(msg.sender, "You are not the owner");
+        }
+
+        campaign.paused = true;
+        campaign.updated = block.timestamp;
+        emit CampaignPaused(msg.sender, id, block.timestamp);
+    }
+
+    function unpauseCampaign(uint32 id) external whenNotPaused {
+        if (blacklisted[msg.sender]) {
+            revert AccountError(msg.sender, "You are blacklisted");
+        }
+
+        if (id == 0 || id > numberOfCampaigns) {
+            revert ValidationFailed(msg.sender, "Invalid campaign ID");
+        }
+
+        Campaign storage campaign = campaigns[id];
+        if (campaign.owner != msg.sender) {
+            revert AccountError(msg.sender, "You are not the owner");
+        }
+
+        campaign.paused = false;
+        campaign.updated = block.timestamp;
+        emit CampaignUnpaused(msg.sender, id, block.timestamp);
     }
 
     function donateWithToken(
