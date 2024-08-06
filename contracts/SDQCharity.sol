@@ -17,6 +17,7 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
 
     bytes32 private constant EDITOR_ROLE = keccak256("EDITOR_ROLE");
     uint32 public numberOfCampaigns;
+    uint8 public constant PLATFORM_FEE = 1;
 
     struct Campaign {
         address owner;
@@ -283,17 +284,17 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
         campaign.paused = true;
         campaign.updated = block.timestamp;
 
-        payable(msg.sender).transfer(campaignNativeDonations[id]);
+        uint256 sendAmount = campaignNativeDonations[id];
+        uint256 platformFee = (sendAmount * PLATFORM_FEE) / 100;
+        sendAmount -= platformFee;
+        payable(msg.sender).transfer(sendAmount);
         (address[] memory _tokens, ) = _getAvailableTokens();
         for (uint256 i = 0; i < _tokens.length; ) {
-            if (_tokens[i] == address(0)) {
-                unchecked {
-                    ++i;
-                }
-                continue;
-            }
+            uint256 tokenAmount = campaignDonations[id][_tokens[i]];
+            uint256 tokenPlatformFee = (tokenAmount * PLATFORM_FEE) / 100;
+            tokenAmount -= tokenPlatformFee;
+            IERC20(_tokens[i]).safeTransfer(msg.sender, tokenAmount);
 
-            IERC20(_tokens[i]).safeTransfer(msg.sender, campaignDonations[id][_tokens[i]]);
             unchecked {
                 ++i;
             }

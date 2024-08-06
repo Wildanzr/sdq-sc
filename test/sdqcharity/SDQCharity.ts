@@ -550,7 +550,7 @@ describe("SDQCharity", function () {
     });
   })
 
-  describe("Donate Campaign", function () {
+  describe("Donate Campaign With Token", function () {
     beforeEach(async function () {
       const { sdqCharity, owner, accounts, deployedAssets, assets } = await this.loadFixture(deploySDQCharityFixture);
       this.sdqCharity = sdqCharity;
@@ -711,6 +711,64 @@ describe("SDQCharity", function () {
     });
   });
 
+  describe("Donate Campaign With ETH", function () {
+    beforeEach(async function () {
+      const { sdqCharity, owner, accounts } = await this.loadFixture(deploySDQCharityFixture);
+      this.sdqCharity = sdqCharity;
+      this.owner = owner;
+      this.accounts = accounts;
+
+      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", 100)).to.be.emit(
+        this.sdqCharity,
+        "CampaignCreated",
+      );
+    });
+
+    it("Should unable to donate because contract is paused", async function () {
+      await this.sdqCharity.connect(this.owner).pause();
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: parseEther("100") }),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "EnforcedPause");
+    })
+
+    it("Should unable to donate because user is banned", async function () {
+      await this.sdqCharity.connect(this.owner).banUser(this.accounts[0].address);
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: parseEther("100") }),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "AccountError");
+    })
+
+    it("Should unable to donate because campaign doesn't exist", async function () {
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).donate(0, "Anonymous", "Hello World", { value: parseEther("100") }),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).donate(2, "Anonymous", "Hello World", { value: parseEther("100") }),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
+    })
+
+    it("Should unable to donate because amount is 0", async function () {
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: 0 }),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
+    })
+
+    it("Should unable to donate because campaign is paused", async function () {
+      await this.sdqCharity.connect(this.owner).pauseCampaign(1);
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: parseEther("100") }),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
+    })
+
+    it("Should donate correctly", async function () {
+      await expect(this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: parseEther("100") })).to.be.emit(
+        this.sdqCharity,
+        "CampaignDonation",
+      );
+      expect(await ethers.provider.getBalance(await this.sdqCharity.getAddress())).to.be.equal(parseEther("100"));
+    });
+  })
+
   describe("Withdraw Campaign", function () {
     beforeEach(async function () {
       const { sdqCharity, owner, accounts, deployedAssets, assets } = await this.loadFixture(deploySDQCharityFixture);
@@ -736,8 +794,44 @@ describe("SDQCharity", function () {
       );
     });
 
+    it("Should unable to withdraw because contract is paused", async function () {
+      await this.sdqCharity.connect(this.owner).pause();
+      await expect(this.sdqCharity.connect(this.owner).withdrawCampaign(1)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "EnforcedPause",
+      );
+    })
+
+    it("Should unable to withdraw because user is banned", async function () {
+      await this.sdqCharity.connect(this.owner).banUser(this.accounts[0].address);
+      await expect(this.sdqCharity.connect(this.accounts[0]).withdrawCampaign(1)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should unable to withdraw because campaign doesn't exist", async function () {
+      await expect(this.sdqCharity.connect(this.owner).withdrawCampaign(0)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationFailed",
+      );
+      await expect(this.sdqCharity.connect(this.owner).withdrawCampaign(2)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationFailed",
+      );
+    })
+
+    it("Should unable to withdraw because not the owner", async function () {
+      await expect(this.sdqCharity.connect(this.accounts[0]).withdrawCampaign(1)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
     it("Should withdraw correctly", async function () {
-      const ethDonation = parseEther("1000")
+      const PLATFORM_FEE = await this.sdqCharity.PLATFORM_FEE();
+      const ethDonation = parseEther("10")
+      const remainAmount = parseEther((10 * Number(PLATFORM_FEE) / 100).toString())
       const randomAmount: number[] = [];
 
       for (let i = 0; i < this.deployedAssets.length - 1; i++) {
@@ -752,14 +846,16 @@ describe("SDQCharity", function () {
         .connect(this.accounts[0])
         .donate(1, "Anonymous", "Hello World", { value: ethDonation }))
         .to.be.emit(this.sdqCharity, "CampaignDonation");
-      expect(await ethers.provider.getBalance(await this.sdqCharity.getAddress())).to.be.equal(ethDonation);
+      expect(await ethers.provider.getBalance(await this.sdqCharity.getAddress()))
+        .to.be.equal(ethDonation);
 
       await expect(this.sdqCharity.connect(this.owner).withdrawCampaign(1)).to.be.emit(this.sdqCharity, "CampaignClaimed");
       for (let i = 0; i < this.deployedAssets.length - 1; i++) {
         const ownerBalance = await this.deployedAssets[i].balanceOf(this.owner.address);
-        expect(ownerBalance).to.be.equal(randomAmount[i] * 10 ** 6);
+        const amountWithFee = randomAmount[i] * 10 ** 6 - (randomAmount[i] * (Number(PLATFORM_FEE) / 100)) * 10 ** 6;
+        expect(ownerBalance).to.be.equal(amountWithFee);
       }
-      expect(await ethers.provider.getBalance(await this.sdqCharity.getAddress())).to.be.equal(0);
+      expect(await ethers.provider.getBalance(await this.sdqCharity.getAddress())).to.be.equal(remainAmount);
     });
   })
 });
