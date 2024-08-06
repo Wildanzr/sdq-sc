@@ -216,7 +216,13 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
         }
 
         Campaign storage campaign = campaigns[campaignId];
-        if (campaign.paused || campaign.claimed || amount == 0) {
+        if (campaign.claimed) {
+            revert ValidationFailed(msg.sender, "Validation failed");
+        }
+        if (campaign.paused) {
+            revert ValidationFailed(msg.sender, "Validation failed");
+        }
+        if (amount == 0) {
             revert ValidationFailed(msg.sender, "Validation failed");
         }
 
@@ -247,7 +253,13 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
         }
 
         Campaign storage campaign = campaigns[campaignId];
-        if (campaign.paused || campaign.claimed || msg.value == 0) {
+        if (campaign.claimed) {
+            revert ValidationFailed(msg.sender, "Validation failed");
+        }
+        if (campaign.paused) {
+            revert ValidationFailed(msg.sender, "Validation failed");
+        }
+        if (msg.value == 0) {
             revert ValidationFailed(msg.sender, "Validation failed");
         }
 

@@ -1,10 +1,10 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
+import { parseEther } from "ethers";
 import { ethers } from "hardhat";
 
 import type { Signers } from "../types";
 import { deploySDQCharityFixture } from "./SDQCharity.fixture";
-import { parseEther } from "ethers";
 
 describe("SDQCharity", function () {
   before(async function () {
@@ -379,7 +379,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "EnforcedPause",
       );
-    })
+    });
 
     it("Should failed to pause campaign because user is banned", async function () {
       await this.sdqCharity.connect(this.owner).banUser(this.accounts[0].address);
@@ -387,7 +387,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should failed to pause campaign because campaign doesn't exist", async function () {
       await expect(this.sdqCharity.connect(this.accounts[0]).pauseCampaign(0)).to.be.revertedWithCustomError(
@@ -398,14 +398,14 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "ValidationFailed",
       );
-    })
+    });
 
     it("Should failed to pause campaign because not the owner", async function () {
       await expect(this.sdqCharity.connect(this.accounts[1]).pauseCampaign(1)).to.be.revertedWithCustomError(
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should pause campaign", async function () {
       await expect(this.sdqCharity.connect(this.accounts[0]).pauseCampaign(1)).to.be.emit(
@@ -413,8 +413,8 @@ describe("SDQCharity", function () {
         "CampaignPaused",
       );
       expect((await this.sdqCharity.getCampaignDetails(1)).paused).to.be.true;
-    })
-  })
+    });
+  });
 
   describe("Unpause Campaign", function () {
     beforeEach(async function () {
@@ -438,7 +438,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "EnforcedPause",
       );
-    })
+    });
 
     it("Should failed to unpause campaign because user is banned", async function () {
       await this.sdqCharity.connect(this.owner).banUser(this.accounts[0].address);
@@ -446,7 +446,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should failed to unpause campaign because campaign doesn't exist", async function () {
       await expect(this.sdqCharity.connect(this.accounts[0]).unpauseCampaign(0)).to.be.revertedWithCustomError(
@@ -457,14 +457,14 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "ValidationFailed",
       );
-    })
+    });
 
     it("Should failed to unpause campaign because not the owner", async function () {
       await expect(this.sdqCharity.connect(this.accounts[1]).unpauseCampaign(1)).to.be.revertedWithCustomError(
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should unpause campaign", async function () {
       await expect(this.sdqCharity.connect(this.accounts[0]).unpauseCampaign(1)).to.be.emit(
@@ -472,8 +472,8 @@ describe("SDQCharity", function () {
         "CampaignUnpaused",
       );
       expect((await this.sdqCharity.getCampaignDetails(1)).paused).to.be.false;
-    })
-  })
+    });
+  });
 
   describe("Update Campaign", function () {
     beforeEach(async function () {
@@ -519,6 +519,15 @@ describe("SDQCharity", function () {
       ).to.be.revertedWithCustomError(this.sdqCharity, "AccountError");
     });
 
+    it("Should unable to update campaign because already claimed", async function () {
+      const ethDonation = parseEther("10");
+      await this.sdqCharity.connect(this.accounts[1]).donate(1, "Anonymous", "Hello World", { value: ethDonation });
+      await this.sdqCharity.connect(this.accounts[0]).withdrawCampaign(1);
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).updateCampaign(1, "Test1", "Test1", 200),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
+    });
+
     it("Should unable to update campaign because title is empty", async function () {
       await expect(
         this.sdqCharity.connect(this.accounts[0]).updateCampaign(1, "", "Test1", 200),
@@ -548,7 +557,7 @@ describe("SDQCharity", function () {
       expect(res.target).to.be.equal(200);
       expect(res.owner).to.be.equal(this.accounts[0].address);
     });
-  })
+  });
 
   describe("Donate Campaign With Token", function () {
     beforeEach(async function () {
@@ -623,6 +632,50 @@ describe("SDQCharity", function () {
 
     it("Should unable to donate because amount is 0", async function () {
       const donateAmount = 0;
+      await expect(
+        this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(1, donateAmount, await this.deployedAssets[0].getAddress(), "Anonymous", "Hello World"),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
+    });
+
+    it("Should unable to donate because campaign is paused", async function () {
+      const donateAmount = 100 * 10 ** 6;
+      await this.sdqCharity.connect(this.owner).pauseCampaign(1);
+      await expect(
+        this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(1, donateAmount, await this.deployedAssets[0].getAddress(), "Anonymous", "Hello World"),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
+    });
+
+    it("Should unable to donate because campaign is already claimed", async function () {
+      const ethDonation = parseEther("10");
+      const randomAmount: number[] = [];
+
+      for (let i = 0; i < this.deployedAssets.length - 1; i++) {
+        randomAmount.push(Math.floor(Math.random() * 100) + 1);
+        await this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(
+            1,
+            randomAmount[i] * 10 ** 6,
+            await this.deployedAssets[i].getAddress(),
+            "Anonymous",
+            "Hello World",
+          );
+      }
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation }),
+      ).to.be.emit(this.sdqCharity, "CampaignDonation");
+      expect(await ethers.provider.getBalance(await this.sdqCharity.getAddress())).to.be.equal(ethDonation);
+
+      await expect(this.sdqCharity.connect(this.owner).withdrawCampaign(1)).to.be.emit(
+        this.sdqCharity,
+        "CampaignClaimed",
+      );
+
+      const donateAmount = 100 * 10 ** 6;
       await expect(
         this.sdqCharity
           .connect(this.accounts[0])
@@ -729,14 +782,14 @@ describe("SDQCharity", function () {
       await expect(
         this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: parseEther("100") }),
       ).to.be.revertedWithCustomError(this.sdqCharity, "EnforcedPause");
-    })
+    });
 
     it("Should unable to donate because user is banned", async function () {
       await this.sdqCharity.connect(this.owner).banUser(this.accounts[0].address);
       await expect(
         this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: parseEther("100") }),
       ).to.be.revertedWithCustomError(this.sdqCharity, "AccountError");
-    })
+    });
 
     it("Should unable to donate because campaign doesn't exist", async function () {
       await expect(
@@ -745,29 +798,37 @@ describe("SDQCharity", function () {
       await expect(
         this.sdqCharity.connect(this.accounts[0]).donate(2, "Anonymous", "Hello World", { value: parseEther("100") }),
       ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
-    })
+    });
 
     it("Should unable to donate because amount is 0", async function () {
       await expect(
         this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: 0 }),
       ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
-    })
+    });
 
     it("Should unable to donate because campaign is paused", async function () {
       await this.sdqCharity.connect(this.owner).pauseCampaign(1);
       await expect(
         this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: parseEther("100") }),
       ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
-    })
+    });
+
+    it("Should unable to donate because campaign is already claimed", async function () {
+      const ethDonation = parseEther("10");
+      await this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation });
+      await this.sdqCharity.connect(this.owner).withdrawCampaign(1);
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation }),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
+    });
 
     it("Should donate correctly", async function () {
-      await expect(this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: parseEther("100") })).to.be.emit(
-        this.sdqCharity,
-        "CampaignDonation",
-      );
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: parseEther("100") }),
+      ).to.be.emit(this.sdqCharity, "CampaignDonation");
       expect(await ethers.provider.getBalance(await this.sdqCharity.getAddress())).to.be.equal(parseEther("100"));
     });
-  })
+  });
 
   describe("Withdraw Campaign", function () {
     beforeEach(async function () {
@@ -800,7 +861,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "EnforcedPause",
       );
-    })
+    });
 
     it("Should unable to withdraw because user is banned", async function () {
       await this.sdqCharity.connect(this.owner).banUser(this.accounts[0].address);
@@ -808,7 +869,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should unable to withdraw because campaign doesn't exist", async function () {
       await expect(this.sdqCharity.connect(this.owner).withdrawCampaign(0)).to.be.revertedWithCustomError(
@@ -819,43 +880,87 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "ValidationFailed",
       );
-    })
+    });
 
     it("Should unable to withdraw because not the owner", async function () {
       await expect(this.sdqCharity.connect(this.accounts[0]).withdrawCampaign(1)).to.be.revertedWithCustomError(
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should withdraw correctly", async function () {
       const PLATFORM_FEE = await this.sdqCharity.PLATFORM_FEE();
-      const ethDonation = parseEther("10")
-      const remainAmount = parseEther((10 * Number(PLATFORM_FEE) / 100).toString())
+      const ethDonation = parseEther("10");
+      const remainAmount = parseEther(((10 * Number(PLATFORM_FEE)) / 100).toString());
       const randomAmount: number[] = [];
 
       for (let i = 0; i < this.deployedAssets.length - 1; i++) {
         randomAmount.push(Math.floor(Math.random() * 100) + 1);
         await this.sdqCharity
           .connect(this.accounts[0])
-          .donateWithToken(1,
+          .donateWithToken(
+            1,
             randomAmount[i] * 10 ** 6,
-            await this.deployedAssets[i].getAddress(), "Anonymous", "Hello World");
+            await this.deployedAssets[i].getAddress(),
+            "Anonymous",
+            "Hello World",
+          );
       }
-      await expect(this.sdqCharity
-        .connect(this.accounts[0])
-        .donate(1, "Anonymous", "Hello World", { value: ethDonation }))
-        .to.be.emit(this.sdqCharity, "CampaignDonation");
-      expect(await ethers.provider.getBalance(await this.sdqCharity.getAddress()))
-        .to.be.equal(ethDonation);
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation }),
+      ).to.be.emit(this.sdqCharity, "CampaignDonation");
+      expect(await ethers.provider.getBalance(await this.sdqCharity.getAddress())).to.be.equal(ethDonation);
 
-      await expect(this.sdqCharity.connect(this.owner).withdrawCampaign(1)).to.be.emit(this.sdqCharity, "CampaignClaimed");
+      await expect(this.sdqCharity.connect(this.owner).withdrawCampaign(1)).to.be.emit(
+        this.sdqCharity,
+        "CampaignClaimed",
+      );
       for (let i = 0; i < this.deployedAssets.length - 1; i++) {
         const ownerBalance = await this.deployedAssets[i].balanceOf(this.owner.address);
-        const amountWithFee = randomAmount[i] * 10 ** 6 - (randomAmount[i] * (Number(PLATFORM_FEE) / 100)) * 10 ** 6;
+        const amountWithFee = randomAmount[i] * 10 ** 6 - randomAmount[i] * (Number(PLATFORM_FEE) / 100) * 10 ** 6;
         expect(ownerBalance).to.be.equal(amountWithFee);
       }
       expect(await ethers.provider.getBalance(await this.sdqCharity.getAddress())).to.be.equal(remainAmount);
     });
-  })
+
+    it("Should unable to withdraw for second time", async function () {
+      const PLATFORM_FEE = await this.sdqCharity.PLATFORM_FEE();
+      const ethDonation = parseEther("10");
+      const remainAmount = parseEther(((10 * Number(PLATFORM_FEE)) / 100).toString());
+      const randomAmount: number[] = [];
+
+      for (let i = 0; i < this.deployedAssets.length - 1; i++) {
+        randomAmount.push(Math.floor(Math.random() * 100) + 1);
+        await this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(
+            1,
+            randomAmount[i] * 10 ** 6,
+            await this.deployedAssets[i].getAddress(),
+            "Anonymous",
+            "Hello World",
+          );
+      }
+      await expect(
+        this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation }),
+      ).to.be.emit(this.sdqCharity, "CampaignDonation");
+      expect(await ethers.provider.getBalance(await this.sdqCharity.getAddress())).to.be.equal(ethDonation);
+
+      await expect(this.sdqCharity.connect(this.owner).withdrawCampaign(1)).to.be.emit(
+        this.sdqCharity,
+        "CampaignClaimed",
+      );
+      for (let i = 0; i < this.deployedAssets.length - 1; i++) {
+        const ownerBalance = await this.deployedAssets[i].balanceOf(this.owner.address);
+        const amountWithFee = randomAmount[i] * 10 ** 6 - randomAmount[i] * (Number(PLATFORM_FEE) / 100) * 10 ** 6;
+        expect(ownerBalance).to.be.equal(amountWithFee);
+      }
+      expect(await ethers.provider.getBalance(await this.sdqCharity.getAddress())).to.be.equal(remainAmount);
+      await expect(this.sdqCharity.connect(this.owner).withdrawCampaign(1)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationFailed",
+      );
+    });
+  });
 });
