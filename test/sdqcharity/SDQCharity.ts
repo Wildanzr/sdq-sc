@@ -4,6 +4,7 @@ import { ethers } from "hardhat";
 
 import type { Signers } from "../types";
 import { deploySDQCharityFixture } from "./SDQCharity.fixture";
+import { parseEther } from "ethers";
 
 describe("SDQCharity", function () {
   before(async function () {
@@ -549,7 +550,7 @@ describe("SDQCharity", function () {
     });
   })
 
-  describe("Donate", function () {
+  describe("Donate Campaign", function () {
     beforeEach(async function () {
       const { sdqCharity, owner, accounts, deployedAssets, assets } = await this.loadFixture(deploySDQCharityFixture);
       this.sdqCharity = sdqCharity;
@@ -709,4 +710,56 @@ describe("SDQCharity", function () {
       expect(donations[1][addrIndex2]).to.be.equal(donateAmount);
     });
   });
+
+  describe("Withdraw Campaign", function () {
+    beforeEach(async function () {
+      const { sdqCharity, owner, accounts, deployedAssets, assets } = await this.loadFixture(deploySDQCharityFixture);
+      this.sdqCharity = sdqCharity;
+      this.owner = owner;
+      this.accounts = accounts;
+      this.deployedAssets = deployedAssets;
+      this.assets = assets;
+
+      for (let i = 0; i < this.deployedAssets.length - 1; i++) {
+        await this.sdqCharity
+          .connect(this.owner)
+          .addToken(await this.deployedAssets[i].getAddress(), this.assets[i].ticker);
+
+        const amount = 10000 * 10 ** 6;
+        await this.deployedAssets[i].connect(this.owner).mintTo(this.accounts[0].address, amount);
+        await this.deployedAssets[i].connect(this.accounts[0]).approve(await this.sdqCharity.getAddress(), amount);
+      }
+
+      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", 100)).to.be.emit(
+        this.sdqCharity,
+        "CampaignCreated",
+      );
+    });
+
+    it("Should withdraw correctly", async function () {
+      const ethDonation = parseEther("1000")
+      const randomAmount: number[] = [];
+
+      for (let i = 0; i < this.deployedAssets.length - 1; i++) {
+        randomAmount.push(Math.floor(Math.random() * 100) + 1);
+        await this.sdqCharity
+          .connect(this.accounts[0])
+          .donateWithToken(1,
+            randomAmount[i] * 10 ** 6,
+            await this.deployedAssets[i].getAddress(), "Anonymous", "Hello World");
+      }
+      await expect(this.sdqCharity
+        .connect(this.accounts[0])
+        .donate(1, "Anonymous", "Hello World", { value: ethDonation }))
+        .to.be.emit(this.sdqCharity, "CampaignDonation");
+      expect(await ethers.provider.getBalance(await this.sdqCharity.getAddress())).to.be.equal(ethDonation);
+
+      await expect(this.sdqCharity.connect(this.owner).withdrawCampaign(1)).to.be.emit(this.sdqCharity, "CampaignClaimed");
+      for (let i = 0; i < this.deployedAssets.length - 1; i++) {
+        const ownerBalance = await this.deployedAssets[i].balanceOf(this.owner.address);
+        expect(ownerBalance).to.be.equal(randomAmount[i] * 10 ** 6);
+      }
+      expect(await ethers.provider.getBalance(await this.sdqCharity.getAddress())).to.be.equal(0);
+    });
+  })
 });
