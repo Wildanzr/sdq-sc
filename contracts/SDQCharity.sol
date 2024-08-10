@@ -56,8 +56,8 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
         address indexed owner,
         uint256 campaignId,
         string title,
+        string description,
         string details,
-        uint256 target,
         uint256 timestamp
     );
     event CampaignUpdated(
@@ -105,12 +105,17 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
         return verified[user];
     }
 
-    function createCampaign(string memory title, string memory details, uint256 target) external whenNotPaused {
+    function createCampaign(
+        string memory title,
+        string memory description,
+        string memory details,
+        uint256 target
+    ) external whenNotPaused {
         if (blacklisted[msg.sender]) {
             revert AccountError(msg.sender, "You are blacklisted");
         }
 
-        if (bytes(title).length == 0 || bytes(details).length == 0 || target == 0) {
+        if (bytes(title).length == 0 || bytes(description).length == 0 || bytes(details).length == 0 || target == 0) {
             revert ValidationFailed(msg.sender, "Title, details, and target are required");
         }
         numberOfCampaigns++;
@@ -121,7 +126,7 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
         campaign.target = target;
         campaign.created = block.timestamp;
         campaign.updated = block.timestamp;
-        emit CampaignCreated(msg.sender, numberOfCampaigns, title, details, target, block.timestamp);
+        emit CampaignCreated(msg.sender, numberOfCampaigns, title, description, details, block.timestamp);
     }
 
     function updateCampaign(

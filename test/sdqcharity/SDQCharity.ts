@@ -102,17 +102,17 @@ describe("SDQCharity", function () {
     it("Should ban user", async function () {
       await this.sdqCharity.connect(this.owner).banUser(this.accounts[0].address);
       await expect(
-        this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", 100),
+        this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", "Test", 100),
       ).to.be.revertedWithCustomError(this.sdqCharity, "AccountError");
     });
 
     it("Should unban user", async function () {
       await this.sdqCharity.connect(this.owner).banUser(this.accounts[0].address);
       await expect(
-        this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", 100),
+        this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", "Test", 100),
       ).to.be.revertedWithCustomError(this.sdqCharity, "AccountError");
       await this.sdqCharity.connect(this.owner).unbanUser(this.accounts[0].address);
-      await expect(this.sdqCharity.connect(this.accounts[0]).createCampaign("Test1", "Test1", 100)).to.be.emit(
+      await expect(this.sdqCharity.connect(this.accounts[0]).createCampaign("Test1", "Test", "Test1", 100)).to.be.emit(
         this.sdqCharity,
         "CampaignCreated",
       );
@@ -305,40 +305,47 @@ describe("SDQCharity", function () {
       await this.sdqCharity.connect(this.owner).pause();
       expect(await this.sdqCharity.connect(this.owner).paused()).to.be.true;
       await expect(
-        this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", 100),
+        this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", "Test", 100),
       ).to.be.revertedWithCustomError(this.sdqCharity, "EnforcedPause");
     });
 
     it("Should unable to create campaign because user is banned", async function () {
       await this.sdqCharity.connect(this.owner).banUser(this.accounts[0].address);
       await expect(
-        this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", 100),
+        this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", "Test", 100),
       ).to.be.revertedWithCustomError(this.sdqCharity, "AccountError");
     });
 
     it("Should unable to create campaign because title is empty", async function () {
-      await expect(this.sdqCharity.connect(this.owner).createCampaign("", "Test", 100)).to.be.revertedWithCustomError(
+      await expect(this.sdqCharity.connect(this.owner).createCampaign("", "Test", "Test", 100)).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "ValidationFailed",
+      );
+    });
+
+    it("Should unable to create campaign because description is empty", async function () {
+      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "", "Test", 100)).to.be.revertedWithCustomError(
         this.sdqCharity,
         "ValidationFailed",
       );
     });
 
     it("Should unable to create campaign because details is empty", async function () {
-      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "", 100)).to.be.revertedWithCustomError(
+      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", "", 100)).to.be.revertedWithCustomError(
         this.sdqCharity,
         "ValidationFailed",
       );
     });
 
     it("Should unable to create campaign because target is 0", async function () {
-      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", 0)).to.be.revertedWithCustomError(
+      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", "Test", 0)).to.be.revertedWithCustomError(
         this.sdqCharity,
         "ValidationFailed",
       );
     });
 
     it("Should create campaign correctly", async function () {
-      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", 100)).to.be.emit(
+      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", "Test", 100)).to.be.emit(
         this.sdqCharity,
         "CampaignCreated",
       );
@@ -367,7 +374,7 @@ describe("SDQCharity", function () {
       this.deployedAssets = deployedAssets;
       this.assets = assets;
 
-      await expect(this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", 100)).to.be.emit(
+      await expect(this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", "Test", 100)).to.be.emit(
         this.sdqCharity,
         "CampaignCreated",
       );
@@ -425,7 +432,7 @@ describe("SDQCharity", function () {
       this.deployedAssets = deployedAssets;
       this.assets = assets;
 
-      await expect(this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", 100)).to.be.emit(
+      await expect(this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", "Test", 100)).to.be.emit(
         this.sdqCharity,
         "CampaignCreated",
       );
@@ -484,7 +491,7 @@ describe("SDQCharity", function () {
       this.deployedAssets = deployedAssets;
       this.assets = assets;
 
-      await expect(this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", 100)).to.be.emit(
+      await expect(this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", "Test", 100)).to.be.emit(
         this.sdqCharity,
         "CampaignCreated",
       );
@@ -578,7 +585,7 @@ describe("SDQCharity", function () {
         await this.deployedAssets[i].connect(this.accounts[0]).approve(await this.sdqCharity.getAddress(), amount);
       }
 
-      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", 100)).to.be.emit(
+      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", "Test", 100)).to.be.emit(
         this.sdqCharity,
         "CampaignCreated",
       );
@@ -771,7 +778,7 @@ describe("SDQCharity", function () {
       this.owner = owner;
       this.accounts = accounts;
 
-      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", 100)).to.be.emit(
+      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", "Test", 100)).to.be.emit(
         this.sdqCharity,
         "CampaignCreated",
       );
@@ -849,7 +856,7 @@ describe("SDQCharity", function () {
         await this.deployedAssets[i].connect(this.accounts[0]).approve(await this.sdqCharity.getAddress(), amount);
       }
 
-      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", 100)).to.be.emit(
+      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", "Test", 100)).to.be.emit(
         this.sdqCharity,
         "CampaignCreated",
       );

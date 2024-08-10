@@ -7,6 +7,7 @@ import type { NetworkUserConfig } from "hardhat/types";
 
 import "./tasks/accounts";
 import "./tasks/shodaqo";
+import "./tasks/charity";
 
 // Run 'npx hardhat vars setup' to see the list of variables that need to be set
 

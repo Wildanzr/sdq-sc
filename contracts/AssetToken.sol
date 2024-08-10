@@ -11,14 +11,14 @@ contract AssetToken is ERC20, ERC20Burnable, AccessControl, ERC20Permit {
     uint256 public mintAmount;
 
     constructor(
-        address defaultAdmin,
-        string memory name,
-        string memory ticker,
-        uint256 amount
-    ) ERC20(name, ticker) ERC20Permit(name) {
-        _grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
-        _grantRole(MINTER_ROLE, defaultAdmin);
-        mintAmount = amount;
+        address _defaultAdmin,
+        string memory _name,
+        string memory _ticker,
+        uint256 _amount
+    ) ERC20(_name, _ticker) ERC20Permit(_name) {
+        _grantRole(DEFAULT_ADMIN_ROLE, _defaultAdmin);
+        _grantRole(MINTER_ROLE, _defaultAdmin);
+        mintAmount = _amount;
     }
 
     function mint() external {
@@ -27,9 +27,5 @@ contract AssetToken is ERC20, ERC20Burnable, AccessControl, ERC20Permit {
 
     function mintTo(address account, uint256 amount) external onlyRole(MINTER_ROLE) {
         _mint(account, amount);
-    }
-
-    function decimals() public view virtual override returns (uint8) {
-        return 6;
     }
 }

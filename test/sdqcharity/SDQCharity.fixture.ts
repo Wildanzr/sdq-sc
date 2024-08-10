@@ -5,7 +5,7 @@ import type { AssetToken, AssetToken__factory, SDQCharity, SDQCharity__factory }
 interface Asset {
   name: string;
   ticker: string;
-  mintAmount: number;
+  mintAmount: bigint;
   decimals: number;
 }
 
@@ -19,28 +19,46 @@ export async function deploySDQCharityFixture() {
   // Deploy assets token
   const assets: Asset[] = [
     {
-      name: "USDC",
-      ticker: "USDC",
-      mintAmount: 100,
-      decimals: 6,
-    },
-    {
-      name: "USDT on Kava",
-      ticker: "USDT",
-      mintAmount: 100,
+      name: "USD Coin on Axelar",
+      ticker: "axlUSDC",
+      mintAmount: BigInt(100 * 10 ** 6),
       decimals: 6,
     },
     {
       name: "Tether USD on Axelar",
       ticker: "axlUSDT",
-      mintAmount: 100,
+      mintAmount: BigInt(100 * 10 ** 6),
       decimals: 6,
     },
     {
-      name: "USD Coin on Axelar",
-      ticker: "axlUSDC",
-      mintAmount: 100,
+      name: "Axelar",
+      ticker: "AXL",
+      mintAmount: BigInt(180 * 10 ** 6),
       decimals: 6,
+    },
+    {
+      name: "Cosmos Hub",
+      ticker: "ATOM",
+      mintAmount: BigInt(20 * 10 ** 6),
+      decimals: 6,
+    },
+    {
+      name: "Wrapped Bitcoin on Axelar",
+      ticker: "axlWBTC",
+      mintAmount: BigInt(0.00165 * 10 ** 8),
+      decimals: 8,
+    },
+    {
+      name: "Wrapped Ether on Axelar",
+      ticker: "axlWETH",
+      mintAmount: BigInt(0.038 * 10 ** 18),
+      decimals: 18,
+    },
+    {
+      name: "DAI Stablecoin on Axelar",
+      ticker: "axlDAI",
+      mintAmount: BigInt(100 * 10 ** 18),
+      decimals: 18,
     },
   ];
   const deployedAssets: AssetToken[] = [];
