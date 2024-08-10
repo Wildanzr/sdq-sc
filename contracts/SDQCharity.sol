@@ -38,6 +38,8 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
 
     mapping(address user => bool isBlacklisted) public blacklisted;
     mapping(address user => bool isVerified) public verified;
+    mapping(address user => uint8 count) public donationCount;
+    mapping(address user => uint8 count) public campaignCount;
     mapping(uint32 id => Campaign campaign) public campaigns;
     mapping(uint32 id => uint256 donations) public campaignNativeDonations;
     mapping(uint32 id => mapping(address token => uint256) donations) public campaignDonations;
@@ -119,6 +121,7 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
             revert ValidationFailed(msg.sender, "Title, details, and target are required");
         }
         numberOfCampaigns++;
+        campaignCount[msg.sender]++;
         Campaign storage campaign = campaigns[numberOfCampaigns];
         campaign.owner = msg.sender;
         campaign.title = title;
@@ -237,6 +240,7 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
         }
 
         campaignDonations[campaignId][token] += amount;
+        donationCount[msg.sender]++;
         if (campaignDonationsCount[campaignId][msg.sender] == 0) {
             campaign.donators++;
             campaignDonationsCount[campaignId][msg.sender] = 1;
@@ -269,6 +273,7 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
         }
 
         campaignNativeDonations[campaignId] += msg.value;
+        donationCount[msg.sender]++;
         if (campaignDonationsCount[campaignId][msg.sender] == 0) {
             campaign.donators++;
             campaignDonationsCount[campaignId][msg.sender] = 1;

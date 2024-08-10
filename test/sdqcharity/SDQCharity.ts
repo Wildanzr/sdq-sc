@@ -369,6 +369,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "ValidationFailed",
       );
+      expect(await this.sdqCharity.campaignCount(this.owner.address)).to.be.equal(1);
     });
   });
 
@@ -740,6 +741,7 @@ describe("SDQCharity", function () {
       const donations = await this.sdqCharity.getCampaignDonations(1);
       const addrIndex = donations[0].indexOf(await this.deployedAssets[0].getAddress());
       expect(donations[1][addrIndex]).to.be.equal(donateAmount);
+      expect(await this.sdqCharity.donationCount(this.accounts[0].address)).to.be.equal(1);
     });
 
     it("Should donate correctly with multiple tokens", async function () {
@@ -775,6 +777,7 @@ describe("SDQCharity", function () {
       expect(donations[1][addrIndex0]).to.be.equal(donateAmount * 2);
       expect(donations[1][addrIndex1]).to.be.equal(donateAmount);
       expect(donations[1][addrIndex2]).to.be.equal(donateAmount);
+      expect(await this.sdqCharity.donationCount(this.accounts[0].address)).to.be.equal(4);
     });
   });
 
@@ -841,6 +844,7 @@ describe("SDQCharity", function () {
         this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: parseEther("100") }),
       ).to.be.emit(this.sdqCharity, "CampaignDonation");
       expect(await ethers.provider.getBalance(await this.sdqCharity.getAddress())).to.be.equal(parseEther("100"));
+      expect(await this.sdqCharity.donationCount(this.accounts[0].address)).to.be.equal(1);
     });
   });
 

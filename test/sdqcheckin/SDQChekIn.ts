@@ -260,4 +260,113 @@ describe("SDQCheckIn", function () {
       }
     });
   });
+
+  describe("Soulbound", function () {
+    beforeEach(async function () {
+      const { shodaqo, sdqCheckin, owner, accounts, deployedSBT, } = await this.loadFixture(deploySDQCheckInFixture);
+      this.shodaqo = shodaqo;
+      this.sdqCheckin = sdqCheckin;
+      this.owner = owner;
+      this.accounts = accounts;
+      this.deployedSBT = deployedSBT;
+
+      // Give EDITOR ROLE to SDQCheckin
+      for (let i = 0; i < deployedSBT.length; i++) {
+        await deployedSBT[i].grantRole(await deployedSBT[i].EDITOR_ROLE(), sdqCheckin.getAddress());
+      }
+    });
+
+    it("Should fail to claim first SBT because never checkin", async function () {
+      await expect(this.sdqCheckin.connect(this.accounts[1]).mintMyFirstSBT()).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "AccountError",
+      )
+    })
+
+    it("Should fail to claim first SBT because already claimed", async function () {
+      await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+      await this.sdqCheckin.connect(this.accounts[1]).mintMyFirstSBT();
+      await expect(this.sdqCheckin.connect(this.accounts[1]).mintMyFirstSBT()).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "AccountError",
+      )
+    })
+
+    it("Should success to claim first SBT", async function () {
+      await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+      await this.sdqCheckin.connect(this.accounts[1]).mintMyFirstSBT();
+      expect(await this.deployedSBT[0].balanceOf(this.accounts[1].address)).to.be.equal(1);
+    });
+
+    it("Should fail to claim second SBT because checkin less than 7 days", async function () {
+      for (let i = 0; i < 6; i++) {
+        await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+        await time.increase(time.duration.days(1));
+      }
+      await this.sdqCheckin.connect(this.accounts[1]).mintMyFirstSBT();
+      await expect(this.sdqCheckin.connect(this.accounts[1]).mintMyOneWeekSBT()).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "AccountError",
+      )
+    })
+
+    it("Should fail to claim second SBT because already claimed", async function () {
+      for (let i = 0; i < 7; i++) {
+        await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+        await time.increase(time.duration.days(1));
+      }
+      await this.sdqCheckin.connect(this.accounts[1]).mintMyOneWeekSBT();
+      await expect(this.sdqCheckin.connect(this.accounts[1]).mintMyOneWeekSBT()).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "AccountError",
+      )
+    })
+
+    it("Should success to claim second SBT", async function () {
+      for (let i = 0; i < 7; i++) {
+        await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+        await time.increase(time.duration.days(1));
+      }
+      await this.sdqCheckin.connect(this.accounts[1]).mintMyOneWeekSBT();
+      expect(await this.deployedSBT[1].balanceOf(this.accounts[1].address)).to.be.equal(1);
+    });
+
+    it("Should fail to claim third SBT because checkin less than 30 days", async function () {
+      for (let i = 0; i < 29; i++) {
+        await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+        await time.increase(time.duration.days(1));
+      }
+      await this.sdqCheckin.connect(this.accounts[1]).mintMyFirstSBT();
+      await this.sdqCheckin.connect(this.accounts[1]).mintMyOneWeekSBT();
+      await expect(this.sdqCheckin.connect(this.accounts[1]).mintMyOneMonthSBT()).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "AccountError",
+      )
+    });
+
+    it("Should fail to claim third SBT because already claimed", async function () {
+      for (let i = 0; i < 30; i++) {
+        await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+        await time.increase(time.duration.days(1));
+      }
+      await this.sdqCheckin.connect(this.accounts[1]).mintMyFirstSBT();
+      await this.sdqCheckin.connect(this.accounts[1]).mintMyOneWeekSBT();
+      await this.sdqCheckin.connect(this.accounts[1]).mintMyOneMonthSBT();
+      await expect(this.sdqCheckin.connect(this.accounts[1]).mintMyOneMonthSBT()).to.be.revertedWithCustomError(
+        this.sdqCheckin,
+        "AccountError",
+      )
+    });
+
+    it("Should success to claim third SBT", async function () {
+      for (let i = 0; i < 40; i++) {
+        await this.sdqCheckin.connect(this.accounts[1]).checkIn();
+        await time.increase(time.duration.days(1));
+      }
+      await this.sdqCheckin.connect(this.accounts[1]).mintMyFirstSBT();
+      await this.sdqCheckin.connect(this.accounts[1]).mintMyOneWeekSBT();
+      await this.sdqCheckin.connect(this.accounts[1]).mintMyOneMonthSBT();
+      expect(await this.deployedSBT[2].balanceOf(this.accounts[1].address)).to.be.equal(1);
+    });
+  })
 });

@@ -1,7 +1,7 @@
 import type { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/dist/src/signer-with-address";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
-import { AssetToken, SDQCharity, SDQCheckIn, Shodaqo } from "../types";
+import { AssetToken, SDQCharity, SDQCheckIn, Shodaqo, Soulbound } from "../types";
 
 type Fixture<T> = () => Promise<T>;
 
@@ -27,6 +27,7 @@ declare module "mocha" {
     minter: HardhatEthersSigner;
     accounts: HardhatEthersSigner[];
     deployedAssets: AssetToken[];
+    deployedSBT: Soulbound[];
     assets: Asset[];
   }
 }
