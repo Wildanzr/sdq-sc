@@ -178,7 +178,7 @@ describe("SDQCharity", function () {
 
     it("Should add token", async function () {
       const address = await this.deployedAssets[0].getAddress();
-      await expect(this.sdqCharity.connect(this.owner).addToken(address, "USDC")).to.be.emit(
+      await expect(this.sdqCharity.connect(this.owner).addToken(address, this.assets[0].ticker, this.assets[0].decimals)).to.be.emit(
         this.sdqCharity,
         "TokenAdded",
       );
@@ -186,25 +186,31 @@ describe("SDQCharity", function () {
 
     it("Should fail to add token because didn't have permission", async function () {
       await expect(
-        this.sdqCharity.connect(this.accounts[0]).addToken(await this.deployedAssets[0].getAddress(), "USDC"),
+        this.sdqCharity.connect(this.accounts[0]).addToken(await this.deployedAssets[0].getAddress(), this.assets[0].ticker, this.assets[0].decimals),
       ).to.be.revertedWithCustomError(this.sdqCharity, "AccessControlUnauthorizedAccount");
     });
 
     it("Should fail to add token because token address is zero", async function () {
       await expect(
-        this.sdqCharity.connect(this.owner).addToken(ethers.ZeroAddress, "USDC"),
+        this.sdqCharity.connect(this.owner).addToken(ethers.ZeroAddress, this.assets[0].ticker, this.assets[0].decimals),
       ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationError");
     });
 
     it("Should fail to add token because token name is empty", async function () {
       await expect(
-        this.sdqCharity.connect(this.owner).addToken(await this.deployedAssets[0].getAddress(), ""),
+        this.sdqCharity.connect(this.owner).addToken(await this.deployedAssets[0].getAddress(), "", this.assets[0].decimals),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationError");
+    });
+
+    it("Should fail to add token because token decimal is zero", async function () {
+      await expect(
+        this.sdqCharity.connect(this.owner).addToken(await this.deployedAssets[0].getAddress(), this.assets[0].ticker, 0),
       ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationError");
     });
 
     it("Should fail to add token because token already added", async function () {
       const address = await this.deployedAssets[0].getAddress();
-      await expect(this.sdqCharity.connect(this.owner).addToken(address, "USDC")).to.be.emit(
+      await expect(this.sdqCharity.connect(this.owner).addToken(address, this.assets[0].ticker, this.assets[0].decimals)).to.be.emit(
         this.sdqCharity,
         "TokenAdded",
       );
@@ -212,8 +218,8 @@ describe("SDQCharity", function () {
       expect(tokens[0].length).to.be.equal(1);
       expect(tokens[1].length).to.be.equal(1);
       expect(tokens[0][0]).to.be.equal(address);
-      expect(tokens[1][0]).to.be.equal("USDC");
-      await expect(this.sdqCharity.connect(this.owner).addToken(address, "USDC")).to.be.revertedWithCustomError(
+      expect(tokens[1][0]).to.be.equal(this.assets[0].ticker);
+      await expect(this.sdqCharity.connect(this.owner).addToken(address, this.assets[0].ticker, this.assets[0].decimals)).to.be.revertedWithCustomError(
         this.sdqCharity,
         "ValidationError",
       );
@@ -223,7 +229,7 @@ describe("SDQCharity", function () {
       for (let i = 0; i < this.deployedAssets.length; i++) {
         await this.sdqCharity
           .connect(this.owner)
-          .addToken(await this.deployedAssets[i].getAddress(), this.assets[i].ticker);
+          .addToken(await this.deployedAssets[i].getAddress(), this.assets[i].ticker, this.assets[i].decimals);
       }
       const tokens = await this.sdqCharity.getAvailableTokens();
       expect(tokens[0].length).to.be.equal(4);
@@ -237,21 +243,22 @@ describe("SDQCharity", function () {
 
   describe("Remove Token", function () {
     beforeEach(async function () {
-      const { sdqCharity, owner, accounts, deployedAssets } = await this.loadFixture(deploySDQCharityFixture);
+      const { sdqCharity, owner, accounts, deployedAssets, assets } = await this.loadFixture(deploySDQCharityFixture);
       this.sdqCharity = sdqCharity;
       this.owner = owner;
       this.accounts = accounts;
       this.deployedAssets = deployedAssets;
+      this.assets = assets;
     });
 
     it("Should remove token", async function () {
       const address = await this.deployedAssets[0].getAddress();
-      await this.sdqCharity.connect(this.owner).addToken(address, "USDC");
+      await this.sdqCharity.connect(this.owner).addToken(address, this.assets[0].ticker, this.assets[0].decimals);
       let tokens = await this.sdqCharity.getAvailableTokens();
       expect(tokens[0].length).to.be.equal(1);
       expect(tokens[1].length).to.be.equal(1);
       expect(tokens[0][0]).to.be.equal(address);
-      expect(tokens[1][0]).to.be.equal("USDC");
+      expect(tokens[1][0]).to.be.equal(this.assets[0].ticker);
       await expect(this.sdqCharity.connect(this.owner).removeToken(address)).to.be.emit(
         this.sdqCharity,
         "TokenRemoved",
@@ -263,12 +270,12 @@ describe("SDQCharity", function () {
 
     it("Should fail to remove token because didn't have permission", async function () {
       const address = await this.deployedAssets[0].getAddress();
-      await this.sdqCharity.connect(this.owner).addToken(address, "USDC");
+      await this.sdqCharity.connect(this.owner).addToken(address, this.assets[0].ticker, this.assets[0].decimals);
       const tokens = await this.sdqCharity.getAvailableTokens();
       expect(tokens[0].length).to.be.equal(1);
       expect(tokens[1].length).to.be.equal(1);
       expect(tokens[0][0]).to.be.equal(address);
-      expect(tokens[1][0]).to.be.equal("USDC");
+      expect(tokens[1][0]).to.be.equal(this.assets[0].ticker);
       await expect(this.sdqCharity.connect(this.accounts[0]).removeToken(address)).to.be.revertedWithCustomError(
         this.sdqCharity,
         "AccessControlUnauthorizedAccount",
@@ -578,7 +585,7 @@ describe("SDQCharity", function () {
       for (let i = 0; i < this.deployedAssets.length - 1; i++) {
         await this.sdqCharity
           .connect(this.owner)
-          .addToken(await this.deployedAssets[i].getAddress(), this.assets[i].ticker);
+          .addToken(await this.deployedAssets[i].getAddress(), this.assets[i].ticker, this.assets[i].decimals);
 
         const amount = 1000 * 10 ** 6;
         await this.deployedAssets[i].connect(this.owner).mintTo(this.accounts[0].address, amount);
@@ -849,7 +856,7 @@ describe("SDQCharity", function () {
       for (let i = 0; i < this.deployedAssets.length - 1; i++) {
         await this.sdqCharity
           .connect(this.owner)
-          .addToken(await this.deployedAssets[i].getAddress(), this.assets[i].ticker);
+          .addToken(await this.deployedAssets[i].getAddress(), this.assets[i].ticker, this.assets[i].decimals);
 
         const amount = 10000 * 10 ** 6;
         await this.deployedAssets[i].connect(this.owner).mintTo(this.accounts[0].address, amount);

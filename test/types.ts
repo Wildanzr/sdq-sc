@@ -8,7 +8,7 @@ type Fixture<T> = () => Promise<T>;
 interface Asset {
   name: string;
   ticker: string;
-  mintAmount: number;
+  mintAmount: bigint;
   decimals: number;
 }
 

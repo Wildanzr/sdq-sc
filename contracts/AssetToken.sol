@@ -28,4 +28,8 @@ contract AssetToken is ERC20, ERC20Burnable, AccessControl, ERC20Permit {
     function mintTo(address account, uint256 amount) external onlyRole(MINTER_ROLE) {
         _mint(account, amount);
     }
+
+    function decimals() public view virtual override returns (uint8) {
+        return 6;
+    }
 }

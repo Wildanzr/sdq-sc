@@ -305,7 +305,7 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
         uint256 platformFee = (sendAmount * PLATFORM_FEE) / 100;
         sendAmount -= platformFee;
         payable(msg.sender).transfer(sendAmount);
-        (address[] memory _tokens, ) = _getAvailableTokens();
+        (address[] memory _tokens, , ) = _getAvailableTokens();
         for (uint256 i = 0; i < _tokens.length; ) {
             uint256 tokenAmount = campaignDonations[id][_tokens[i]];
             uint256 tokenPlatformFee = (tokenAmount * PLATFORM_FEE) / 100;
@@ -332,7 +332,7 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
             revert ValidationFailed(msg.sender, "Invalid campaign ID");
         }
 
-        (address[] memory _tokens, ) = _getAvailableTokens();
+        (address[] memory _tokens, , ) = _getAvailableTokens();
         uint256[] memory _amounts = new uint256[](_tokens.length + 1);
         address[] memory _tokenList = new address[](_tokens.length + 1);
         for (uint256 i = 0; i < _tokens.length; ) {

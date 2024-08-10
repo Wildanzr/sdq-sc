@@ -17,6 +17,7 @@ contract TokenManagement is AccessControl {
     struct TokenDetails {
         address token;
         string name;
+        uint8 decimals;
     }
 
     EnumerableMap.AddressToUintMap private tokenIds;
@@ -41,19 +42,22 @@ contract TokenManagement is AccessControl {
      * @param token The address of the token.
      * @param name The name of the token.
      */
-    function addToken(address token, string memory name) external onlyRole(EDITOR_ROLE) {
+    function addToken(address token, string memory name, uint8 decimal) external onlyRole(EDITOR_ROLE) {
         if (token == address(0)) {
             revert ValidationError("Token address cannot be zero");
         }
         if (bytes(name).length == 0) {
             revert ValidationError("Name cannot be empty");
         }
+        if (decimal == 0) {
+            revert ValidationError("Decimals cannot be zero");
+        }
         if (_isTokenAvailable(token)) {
             revert ValidationError("Token already exists");
         }
         tokenNames[token] = name;
         tokenAddresses[name] = token;
-        tokens.push(TokenDetails(token, name));
+        tokens.push(TokenDetails(token, name, decimal));
         tokenIds.set(token, 0);
         emit TokenAdded(token, name);
     }
@@ -76,7 +80,11 @@ contract TokenManagement is AccessControl {
      * @return _tokens An array of token addresses.
      * @return _names An array of token names.
      */
-    function getAvailableTokens() external view returns (address[] memory _tokens, string[] memory _names) {
+    function getAvailableTokens()
+        external
+        view
+        returns (address[] memory _tokens, string[] memory _names, uint8[] memory _decimals)
+    {
         return _getAvailableTokens();
     }
 
@@ -85,16 +93,22 @@ contract TokenManagement is AccessControl {
      * @return _tokens An array of token addresses.
      * @return _names An array of token names.
      */
-    function _getAvailableTokens() internal view returns (address[] memory _tokens, string[] memory _names) {
+    function _getAvailableTokens()
+        internal
+        view
+        returns (address[] memory _tokens, string[] memory _names, uint8[] memory _decimals)
+    {
         address[] memory _tokenAddresses = new address[](tokenIds.length());
         string[] memory _tokenNames = new string[](tokenIds.length());
+        uint8[] memory _tokenDecimals = new uint8[](tokenIds.length());
 
         for (uint256 i = 0; i < tokenIds.length(); i++) {
             _tokenNames[i] = tokens[i].name;
             _tokenAddresses[i] = tokens[i].token;
+            _tokenDecimals[i] = tokens[i].decimals;
         }
 
-        return (_tokenAddresses, _tokenNames);
+        return (_tokenAddresses, _tokenNames, _tokenDecimals);
     }
 
     /**

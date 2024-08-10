@@ -42,24 +42,24 @@ export async function deploySDQCharityFixture() {
       mintAmount: BigInt(20 * 10 ** 6),
       decimals: 6,
     },
-    {
-      name: "Wrapped Bitcoin on Axelar",
-      ticker: "axlWBTC",
-      mintAmount: BigInt(0.00165 * 10 ** 8),
-      decimals: 8,
-    },
-    {
-      name: "Wrapped Ether on Axelar",
-      ticker: "axlWETH",
-      mintAmount: BigInt(0.038 * 10 ** 18),
-      decimals: 18,
-    },
-    {
-      name: "DAI Stablecoin on Axelar",
-      ticker: "axlDAI",
-      mintAmount: BigInt(100 * 10 ** 18),
-      decimals: 18,
-    },
+    // {
+    //   name: "Wrapped Bitcoin on Axelar",
+    //   ticker: "axlWBTC",
+    //   mintAmount: BigInt(0.00165 * 10 ** 8),
+    //   decimals: 8,
+    // },
+    // {
+    //   name: "Wrapped Ether on Axelar",
+    //   ticker: "axlWETH",
+    //   mintAmount: BigInt(0.038 * 10 ** 18),
+    //   decimals: 18,
+    // },
+    // {
+    //   name: "DAI Stablecoin on Axelar",
+    //   ticker: "axlDAI",
+    //   mintAmount: BigInt(100 * 10 ** 18),
+    //   decimals: 18,
+    // },
   ];
   const deployedAssets: AssetToken[] = [];
   for (const item of assets) {
