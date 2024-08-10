@@ -981,4 +981,259 @@ describe("SDQCharity", function () {
       );
     });
   });
+
+  describe("Soulbound", function () {
+    beforeEach(async function () {
+      const { sdqCharity, owner, accounts, deployedSBT } = await this.loadFixture(deploySDQCharityFixture);
+      this.sdqCharity = sdqCharity;
+      this.owner = owner;
+      this.accounts = accounts;
+      this.deployedSBT = deployedSBT;
+
+      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", "Test", 100)).to.be.emit(
+        this.sdqCharity,
+        "CampaignCreated",
+      );
+      // Give EDITOR ROLE to SDQCheckin
+      for (let i = 0; i < deployedSBT.length; i++) {
+        await deployedSBT[i].grantRole(await deployedSBT[i].EDITOR_ROLE(), sdqCharity.getAddress());
+      }
+    });
+
+    it("Should return correct SBT address", async function () {
+      const res = await this.sdqCharity.connect(this.owner).getSoulboundContracts();
+      expect(res.length).to.be.equal(this.deployedSBT.length);
+      for (let i = 0; i < res.length; i++) {
+        expect(res[i]).to.be.equal(await this.deployedSBT[i].getAddress());
+      }
+    });
+
+    it("Should fail to claim first donation SBT because never donate", async function () {
+      await expect(this.sdqCharity.connect(this.accounts[0]).mintMyFirstDonationSBT()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should fail to claim first donation SBT because already claimed", async function () {
+      const ethDonation = parseEther("1");
+      await this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation });
+      await this.sdqCharity.connect(this.accounts[0]).mintMyFirstDonationSBT();
+      await expect(this.sdqCharity.connect(this.accounts[0]).mintMyFirstDonationSBT()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should claim first donation SBT correctly", async function () {
+      const ethDonation = parseEther("1");
+      await this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation });
+      await this.sdqCharity.connect(this.accounts[0]).mintMyFirstDonationSBT();
+      expect(await this.deployedSBT[0].balanceOf(this.accounts[0].address)).to.be.equal(1);
+    })
+
+    it("Should fail to claim fifth donation SBT because donate less than 5 times", async function () {
+      for (let i = 0; i < 4; i++) {
+        const ethDonation = parseEther("1");
+        await this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation });
+      }
+      await expect(this.sdqCharity.connect(this.accounts[0]).mintMyFifthDonationSBT()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should fail to claim fifth donation SBT because already claimed", async function () {
+      for (let i = 0; i < 5; i++) {
+        const ethDonation = parseEther("1");
+        await this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation });
+      }
+      await this.sdqCharity.connect(this.accounts[0]).mintMyFifthDonationSBT();
+      await expect(this.sdqCharity.connect(this.accounts[0]).mintMyFifthDonationSBT()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should claim fifth donation SBT correctly", async function () {
+      for (let i = 0; i < 5; i++) {
+        const ethDonation = parseEther("1");
+        await this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation });
+      }
+      await this.sdqCharity.connect(this.accounts[0]).mintMyFifthDonationSBT();
+      expect(await this.deployedSBT[1].balanceOf(this.accounts[0].address)).to.be.equal(1);
+    })
+
+    it("Should fail to claim tenth donation SBT because donate less than 10 times", async function () {
+      for (let i = 0; i < 9; i++) {
+        const ethDonation = parseEther("1");
+        await this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation });
+      }
+      await expect(this.sdqCharity.connect(this.accounts[0]).mintMyTenDonationSBT()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should fail to claim tenth donation SBT because already claimed", async function () {
+      for (let i = 0; i < 10; i++) {
+        const ethDonation = parseEther("1");
+        await this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation });
+      }
+      await this.sdqCharity.connect(this.accounts[0]).mintMyTenDonationSBT();
+      await expect(this.sdqCharity.connect(this.accounts[0]).mintMyTenDonationSBT()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should claim tenth donation SBT correctly", async function () {
+      for (let i = 0; i < 10; i++) {
+        const ethDonation = parseEther("1");
+        await this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation });
+      }
+      await this.sdqCharity.connect(this.accounts[0]).mintMyTenDonationSBT();
+      expect(await this.deployedSBT[2].balanceOf(this.accounts[0].address)).to.be.equal(1);
+    })
+
+    it("Should fail to claim fifty donation SBT because donate less than 50 times", async function () {
+      for (let i = 0; i < 49; i++) {
+        const ethDonation = parseEther("1");
+        await this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation });
+      }
+      await expect(this.sdqCharity.connect(this.accounts[0]).mintMyFiftyDonationSBT()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should fail to claim fifty donation SBT because already claimed", async function () {
+      for (let i = 0; i < 50; i++) {
+        const ethDonation = parseEther("1");
+        await this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation });
+      }
+      await this.sdqCharity.connect(this.accounts[0]).mintMyFiftyDonationSBT();
+      await expect(this.sdqCharity.connect(this.accounts[0]).mintMyFiftyDonationSBT()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should claim fifty donation SBT correctly", async function () {
+      for (let i = 0; i < 50; i++) {
+        const ethDonation = parseEther("1");
+        await this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation });
+      }
+      await this.sdqCharity.connect(this.accounts[0]).mintMyFiftyDonationSBT();
+      expect(await this.deployedSBT[3].balanceOf(this.accounts[0].address)).to.be.equal(1);
+    })
+
+    it("Should fail to claim hundred donation SBT because donate less than 100 times", async function () {
+      for (let i = 0; i < 99; i++) {
+        const ethDonation = parseEther("1");
+        await this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation });
+      }
+      await expect(this.sdqCharity.connect(this.accounts[0]).mintMyHundredDonationSBT()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should fail to claim hundred donation SBT because already claimed", async function () {
+      for (let i = 0; i < 100; i++) {
+        const ethDonation = parseEther("1");
+        await this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation });
+      }
+      await this.sdqCharity.connect(this.accounts[0]).mintMyHundredDonationSBT();
+      await expect(this.sdqCharity.connect(this.accounts[0]).mintMyHundredDonationSBT()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should claim hundred donation SBT correctly", async function () {
+      for (let i = 0; i < 100; i++) {
+        const ethDonation = parseEther("1");
+        await this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation });
+      }
+      await this.sdqCharity.connect(this.accounts[0]).mintMyHundredDonationSBT();
+      expect(await this.deployedSBT[4].balanceOf(this.accounts[0].address)).to.be.equal(1);
+    })
+
+    it("Should fail to claim first campaign SBT because never create campaign", async function () {
+      await expect(this.sdqCharity.connect(this.accounts[0]).mintMyFirstCampaignSBT()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should fail to claim first campaign SBT because already claimed", async function () {
+      await this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", "Test", 100);
+      await this.sdqCharity.connect(this.accounts[0]).mintMyFirstCampaignSBT();
+      await expect(this.sdqCharity.connect(this.accounts[0]).mintMyFirstCampaignSBT()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should claim first campaign SBT correctly", async function () {
+      await this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", "Test", 100);
+      await this.sdqCharity.connect(this.accounts[0]).mintMyFirstCampaignSBT();
+      expect(await this.deployedSBT[5].balanceOf(this.accounts[0].address)).to.be.equal(1);
+    })
+
+    it("Should fail to claim third campaign SBT because never create campaign", async function () {
+      await expect(this.sdqCharity.connect(this.accounts[0]).mintMyThirdCampaignSBT()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should fail to claim third campaign SBT because already claimed", async function () {
+      for (let i = 0; i < 3; i++) {
+        await this.sdqCharity.connect(this.accounts[0]).createCampaign(`Test${i}`, "Test", "Test", 100);
+      }
+      await this.sdqCharity.connect(this.accounts[0]).mintMyThirdCampaignSBT();
+      await expect(this.sdqCharity.connect(this.accounts[0]).mintMyThirdCampaignSBT()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should claim third campaign SBT correctly", async function () {
+      for (let i = 0; i < 3; i++) {
+        await this.sdqCharity.connect(this.accounts[0]).createCampaign(`Test${i}`, "Test", "Test", 100);
+      }
+      await this.sdqCharity.connect(this.accounts[0]).mintMyThirdCampaignSBT();
+      expect(await this.deployedSBT[6].balanceOf(this.accounts[0].address)).to.be.equal(1);
+    })
+
+    // create test code similar to mintMyFirstCampaignSBT to test mintMyTenCampaignSBT
+    it("Should fail to claim ten campaign SBT because never create campaign", async function () {
+      await expect(this.sdqCharity.connect(this.accounts[0]).mintMyTenCampaignSBT()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should fail to claim ten campaign SBT because already claimed", async function () {
+      for (let i = 0; i < 10; i++) {
+        await this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", "Test", 100);
+      }
+      await this.sdqCharity.connect(this.accounts[0]).mintMyTenCampaignSBT();
+      await expect(this.sdqCharity.connect(this.accounts[0]).mintMyTenCampaignSBT()).to.be.revertedWithCustomError(
+        this.sdqCharity,
+        "AccountError",
+      );
+    })
+
+    it("Should claim ten campaign SBT correctly", async function () {
+      for (let i = 0; i < 10; i++) {
+        await this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", "Test", 100);
+      }
+      await this.sdqCharity.connect(this.accounts[0]).mintMyTenCampaignSBT();
+      expect(await this.deployedSBT[7].balanceOf(this.accounts[0].address)).to.be.equal(1);
+    })
+
+  })
 });

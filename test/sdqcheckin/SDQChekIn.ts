@@ -276,6 +276,14 @@ describe("SDQCheckIn", function () {
       }
     });
 
+    it("Should return correct SBT address", async function () {
+      const res = await this.sdqCheckin.connect(this.owner).getSoulboundContracts();
+      expect(res.length).to.be.equal(this.deployedSBT.length);
+      for (let i = 0; i < res.length; i++) {
+        expect(res[i]).to.be.equal(await this.deployedSBT[i].getAddress());
+      }
+    });
+
     it("Should fail to claim first SBT because never checkin", async function () {
       await expect(this.sdqCheckin.connect(this.accounts[1]).mintMyFirstSBT()).to.be.revertedWithCustomError(
         this.sdqCheckin,

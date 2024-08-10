@@ -133,6 +133,14 @@ contract SDQCheckIn is AccessControl, Pausable, ReentrancyGuard {
     }
 
     /**
+     * @dev Returns the Soulbound contracts used by the check-in contract.
+     * @return An array of the Soulbound contract addresses.
+     */
+    function getSoulboundContracts() public view returns (address[3] memory) {
+        return soulboundContract;
+    }
+
+    /**
      * @dev Withdraws tokens from the contract.
      * Can only be called by an account with the EDITOR_ROLE.
      * @param amount The amount of tokens to withdraw.

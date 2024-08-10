@@ -1,6 +1,7 @@
 import { ethers } from "hardhat";
 
-import type { AssetToken, AssetToken__factory, SDQCharity, SDQCharity__factory } from "../../types";
+import type { AssetToken, AssetToken__factory, SDQCharity, SDQCharity__factory, Soulbound, Soulbound__factory } from "../../types";
+import { AddressLike } from "ethers";
 
 interface Asset {
   name: string;
@@ -61,6 +62,29 @@ export async function deploySDQCharityFixture() {
     //   decimals: 18,
     // },
   ];
+
+  const sbtTokenURIs = [
+    "QmQSw6qyNUoccP2hQ7hDgEVevNcr8aRtigxrd6zCKbv98H",
+    "QmPE8PLgXCAFBBfSQZmGBZ19q9c171ryUzLSJi1J4sgUZF",
+    "QmehY1YNX5BQfuFxzBFN9EkEFqmYkh7Jc9MCiCzoBXYFx9",
+    "QmW2qyuMvohUyNRqFYnATCPV4jF852k3KVDa7352LYSoik",
+    "Qmb12QKeNKRzZ3Su22LLeLGBzAk9ptMTXMPReJuPKVhhJN",
+    "QmamXWuBbytr9KvczrNiWZb9GX5QJHjRx7GQQ61vk6A3r5",
+    "QmZ99DCFcKwxnvqYTNGLsi8MRVMMazp8C4TFHBkyAFqJSN",
+    "QmQjRgsjVzfWq84zthBvfbjvFDxx93m9HKqfMQMaQvZcYE"
+  ]
+
+  // Deploy Soulbond Tokens
+  const deployedSBT: Soulbound[] = [];
+  const deployedAddresses: AddressLike[] = [];
+  for (let i = 0; i < sbtTokenURIs.length; i++) {
+    const SBT = (await ethers.getContractFactory("Soulbound")) as unknown as Soulbound__factory;
+    const sbt = (await SBT.deploy(owner.address, sbtTokenURIs[i])) as Soulbound;
+    deployedSBT.push(sbt);
+    deployedAddresses.push(await sbt.getAddress());
+  }
+
+
   const deployedAssets: AssetToken[] = [];
   for (const item of assets) {
     const AssetToken = (await ethers.getContractFactory("AssetToken")) as unknown as AssetToken__factory;
@@ -70,7 +94,16 @@ export async function deploySDQCharityFixture() {
 
   // Deploy SDQCharity
   const SDQCharity = (await ethers.getContractFactory("SDQCharity")) as unknown as SDQCharity__factory;
-  const sdqCharity = (await SDQCharity.deploy()) as SDQCharity;
+  const sdqCharity = (await SDQCharity.deploy([
+    deployedAddresses[0],
+    deployedAddresses[1],
+    deployedAddresses[2],
+    deployedAddresses[3],
+    deployedAddresses[4],
+    deployedAddresses[5],
+    deployedAddresses[6],
+    deployedAddresses[7],
+  ])) as SDQCharity;
 
-  return { assets, deployedAssets, sdqCharity, owner, editor, accounts };
+  return { assets, deployedAssets, deployedSBT, sdqCharity, owner, editor, accounts };
 }

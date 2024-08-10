@@ -6,6 +6,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { TokenManagement } from "./TokenManagement.sol";
+import { SoulboundInterface } from "./SoulboundInterface.sol";
 
 error AccountError(address user, string reason);
 error InsufficientBalance(address user, uint256 available, uint256 required);
@@ -18,6 +19,7 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
     bytes32 private constant EDITOR_ROLE = keccak256("EDITOR_ROLE");
     uint32 public numberOfCampaigns;
     uint8 public constant PLATFORM_FEE = 1;
+    address[8] public soulboundContract;
 
     struct Campaign {
         address owner;
@@ -74,37 +76,73 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
     event CampaignUnpaused(address indexed owner, uint256 campaignId, uint256 timestamp);
     event CampaignClaimed(address indexed owner, uint256 campaignId, uint256 timestamp);
 
-    constructor() TokenManagement(msg.sender) {
+    constructor(address[8] memory _soulbound) TokenManagement(msg.sender) {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(EDITOR_ROLE, msg.sender);
+        soulboundContract = _soulbound;
     }
 
+    /**
+     * @dev Pause the contract.
+     */
     function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
         _pause();
     }
 
+    /**
+     * @dev Unpause the contract.
+     */
     function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
         _unpause();
     }
 
+    /**
+     * @dev Ban a user.
+     * @param user The address of the user to ban.
+     */
     function banUser(address user) external onlyRole(EDITOR_ROLE) {
         blacklisted[user] = true;
     }
 
+    /**
+     * @dev Unban a user.
+     * @param user The address of the user to unban.
+     */
     function unbanUser(address user) external onlyRole(EDITOR_ROLE) {
         blacklisted[user] = false;
     }
 
+    /**
+     * @dev Verify a user.
+     * @param user The address of the user to verify.
+     */
     function verifyUser(address user) external onlyRole(EDITOR_ROLE) {
         verified[user] = true;
     }
 
+    /**
+     * @dev Unverify a user.
+     * @param user The address of the user to unverify.
+     */
     function unverifyUser(address user) external onlyRole(EDITOR_ROLE) {
         verified[user] = false;
     }
 
+    /**
+     * @dev Check if a user is verified.
+     * @param user The address of the user to check.
+     * @return Whether the user is verified or not.
+     */
     function isVerifiedUser(address user) external view returns (bool) {
         return verified[user];
+    }
+
+    /**
+     * @dev Returns the Soulbound contracts used by the check-in contract.
+     * @return An array of the Soulbound contract addresses.
+     */
+    function getSoulboundContracts() public view returns (address[8] memory) {
+        return soulboundContract;
     }
 
     function createCampaign(
@@ -351,5 +389,117 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
         _tokenList[_tokens.length] = address(0);
 
         return (_tokenList, _amounts);
+    }
+
+    /**
+     * @dev Mint a Soulbound token for the user's first donation.
+     */
+    function mintMyFirstDonationSBT() public {
+        if (donationCount[msg.sender] == 0) {
+            revert AccountError(msg.sender, "You have not donated yet");
+        }
+        SoulboundInterface sbt = SoulboundInterface(soulboundContract[0]);
+        if (sbt.balanceOf(msg.sender) > 0) {
+            revert AccountError(msg.sender, "You already have a Soulbound token");
+        }
+        sbt.safeMint(msg.sender);
+    }
+
+    /**
+     * @dev Mint a Soulbound token for the user's fifth donation.
+     */
+    function mintMyFifthDonationSBT() public {
+        if (donationCount[msg.sender] < 5) {
+            revert AccountError(msg.sender, "You have not donated 5 times yet");
+        }
+        SoulboundInterface sbt = SoulboundInterface(soulboundContract[1]);
+        if (sbt.balanceOf(msg.sender) > 0) {
+            revert AccountError(msg.sender, "You already have a Soulbound token");
+        }
+        sbt.safeMint(msg.sender);
+    }
+
+    /**
+     * @dev Mint a Soulbound token for the user's tenth donation.
+     */
+    function mintMyTenDonationSBT() public {
+        if (donationCount[msg.sender] < 10) {
+            revert AccountError(msg.sender, "You have not donated 10 times yet");
+        }
+        SoulboundInterface sbt = SoulboundInterface(soulboundContract[2]);
+        if (sbt.balanceOf(msg.sender) > 0) {
+            revert AccountError(msg.sender, "You already have a Soulbound token");
+        }
+        sbt.safeMint(msg.sender);
+    }
+
+    /**
+     * @dev Mint a Soulbound token for the user's fiftieth donation.
+     */
+    function mintMyFiftyDonationSBT() public {
+        if (donationCount[msg.sender] < 50) {
+            revert AccountError(msg.sender, "You have not donated 50 times yet");
+        }
+        SoulboundInterface sbt = SoulboundInterface(soulboundContract[3]);
+        if (sbt.balanceOf(msg.sender) > 0) {
+            revert AccountError(msg.sender, "You already have a Soulbound token");
+        }
+        sbt.safeMint(msg.sender);
+    }
+
+    /**
+     * @dev Mint a Soulbound token for the user's hundredth donation.
+     */
+    function mintMyHundredDonationSBT() public {
+        if (donationCount[msg.sender] < 100) {
+            revert AccountError(msg.sender, "You have not donated 100 times yet");
+        }
+        SoulboundInterface sbt = SoulboundInterface(soulboundContract[4]);
+        if (sbt.balanceOf(msg.sender) > 0) {
+            revert AccountError(msg.sender, "You already have a Soulbound token");
+        }
+        sbt.safeMint(msg.sender);
+    }
+
+    /**
+     * @dev Mint a Soulbound token for the user's first campaign.
+     */
+    function mintMyFirstCampaignSBT() public {
+        if (campaignCount[msg.sender] == 0) {
+            revert AccountError(msg.sender, "You have not created a campaign yet");
+        }
+        SoulboundInterface sbt = SoulboundInterface(soulboundContract[5]);
+        if (sbt.balanceOf(msg.sender) > 0) {
+            revert AccountError(msg.sender, "You already have a Soulbound token");
+        }
+        sbt.safeMint(msg.sender);
+    }
+
+    /**
+     * @dev Mint a Soulbound token for the user's third campaign.
+     */
+    function mintMyThirdCampaignSBT() public {
+        if (campaignCount[msg.sender] < 3) {
+            revert AccountError(msg.sender, "You have not created 3 campaigns yet");
+        }
+        SoulboundInterface sbt = SoulboundInterface(soulboundContract[6]);
+        if (sbt.balanceOf(msg.sender) > 0) {
+            revert AccountError(msg.sender, "You already have a Soulbound token");
+        }
+        sbt.safeMint(msg.sender);
+    }
+
+    /**
+     * @dev Mint a Soulbound token for the user's tenth campaign.
+     */
+    function mintMyTenCampaignSBT() public {
+        if (campaignCount[msg.sender] < 10) {
+            revert AccountError(msg.sender, "You have not created 10 campaigns yet");
+        }
+        SoulboundInterface sbt = SoulboundInterface(soulboundContract[7]);
+        if (sbt.balanceOf(msg.sender) > 0) {
+            revert AccountError(msg.sender, "You already have a Soulbound token");
+        }
+        sbt.safeMint(msg.sender);
     }
 }
