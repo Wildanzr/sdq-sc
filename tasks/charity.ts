@@ -6,8 +6,8 @@ task("soulbound:charity", "Give EDITOR ROLE to SDQCharity contract to manage Sou
   .setAction(async (taskArgs: TaskArguments, { ethers }) => {
     const signers = await ethers.getSigners();
 
-    const charityAddr = "0x1a24D7B5dE26Dba2629959dCaCf4b26fB5F93e17";
-    const soulboundAddrs = ["0xA9E00D1940445a0f13DC505bEf4956120F4E880e", "0xbc1BBdd62d58D0E80136832854c35f32593bd3F7", "0xFd285A71805E46B6016B25FF82A55D93BF8Fd112", "0xD097f3102dB4e5469C6D67863515ebe92d225395", "0x3d353D66cBEfD134765Fab126e7Ef90eE03ea979", "0xA03aFD86c193fF755614D4c662FfBDEa2d6d82Ee", "0xc6f673C50D6Ee199F2e79a1599630D57A55DDc1A", "0xe0f64E55eAb05a7e048059742668E9c22E9Eb131"];
+    const charityAddr = "0xeE69D703b166254313E1B46fdB6a60fda7decd2B";
+    const soulboundAddrs = ["0xFBAa8FBD196Be84aEe7a441d2E401B5dFD590bC3", "0x38Bca10DC760bA287718Af20B1a663db63d3A4Fa", "0xBbbC242b1bA31F19B834e7035c3A429486dbC6eA", "0x3c8c04f86A0dF859d04C53Dc5c186d743172E2D3", "0x7188A91DA93382a43cB54FaD6Fca9b0345E372CA", "0x91ba4272b7c3f864f1b483C4D0BEd8eC05469262", "0x1E30fc4e1741E1f4fAb0670B9fe66C529335057f", "0xDEbbCbc64fDB1223A6f610D669A54C82d1546D6f"];
 
     for (let i = 0; i < soulboundAddrs.length; i++) {
       console.log("Soulbound address: ", soulboundAddrs[i]);
@@ -21,7 +21,7 @@ task("add:tokens", "Add tokens to be able to donate")
   .setAction(async (taskArgs: TaskArguments, { ethers }) => {
     const signers = await ethers.getSigners();
 
-    const charityAddr = "0x1a24D7B5dE26Dba2629959dCaCf4b26fB5F93e17";
+    const charityAddr = "0xeE69D703b166254313E1B46fdB6a60fda7decd2B";
     const tokens = [
       {
         ticker: "axlusdc",

@@ -370,6 +370,24 @@ describe("SDQCharity", function () {
         "ValidationFailed",
       );
       expect(await this.sdqCharity.campaignCount(this.owner.address)).to.be.equal(1);
+
+      for (let i = 0; i < 10; i++) {
+        if (i % 2 === 0) {
+          await this.sdqCharity.connect(this.accounts[0]).createCampaign(`Test ${i}`, "Test", "Test", 100)
+        } else {
+          await this.sdqCharity.connect(this.owner).createCampaign(`Test ${i}`, "Test", "Test", 100)
+        }
+      }
+      console.log("Number ", await this.sdqCharity.numberOfCampaigns())
+      const restuls = await this.sdqCharity.connect(this.owner).getMyCampaignIndex(1, 20);
+      console.log("Owner", restuls);
+      const restul1 = await this.sdqCharity.connect(this.owner).getMyCampaignIndex(2, 20);
+      console.log("Owner", restul1);
+
+      const pag = await this.sdqCharity.getPaginatedCampaignsIndex(1, 20);
+      const pag2 = await this.sdqCharity.getPaginatedCampaignsIndex(2, 20);
+      console.log("Paginated1", pag);
+      console.log("Paginated2", pag2);
     });
   });
 

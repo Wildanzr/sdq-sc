@@ -145,6 +145,54 @@ contract SDQCharity is TokenManagement, Pausable, ReentrancyGuard {
         return soulboundContract;
     }
 
+    function getPaginatedCampaignsIndex(uint32 page, uint32 limit) external view returns (uint32[] memory) {
+        if (limit >= 20) {
+            limit = 20;
+        }
+
+        uint32[] memory myCampaigns = new uint32[](limit);
+        uint32 index = 0;
+        uint32 startIndex = (page - 1) * limit + 1;
+        uint32 found = 0;
+        uint32 i = startIndex;
+        do {
+            myCampaigns[index] = i;
+            ++index;
+            ++found;
+            unchecked {
+                ++i;
+            }
+        } while (i <= numberOfCampaigns && found < limit);
+        return myCampaigns;
+    }
+
+    function getMyCampaignIndex(uint32 page, uint32 limit) external view returns (uint32[] memory) {
+        if (limit >= 20) {
+            limit = 20;
+        }
+        uint32[] memory myCampaigns = new uint32[](limit);
+        uint32 index = 0;
+        uint32 found = 0;
+        uint32 skipped = 0;
+        uint32 i = page * limit - limit;
+
+        while (i <= numberOfCampaigns && found < limit) {
+            if (campaigns[i].owner == msg.sender) {
+                if (skipped < (page - 1) * limit) {
+                    skipped++;
+                } else {
+                    myCampaigns[index] = i;
+                    index++;
+                    found++;
+                }
+            }
+            unchecked {
+                i++;
+            }
+        }
+        return myCampaigns;
+    }
+
     function createCampaign(
         string memory title,
         string memory description,
