@@ -6,6 +6,7 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import { SoulboundInterface } from "./SoulboundInterface.sol";
 
 error AccountError(address claimer, string reason);
 error InsufficientBalance(address claimer, uint256 available, uint256 required);
@@ -19,6 +20,7 @@ contract SDQCheckIn is AccessControl, Pausable, ReentrancyGuard {
 
     IERC20 public sdqToken;
     bytes32 public constant EDITOR_ROLE = keccak256("EDITOR_ROLE");
+    address[3] public soulboundContract;
 
     struct ClaimData {
         uint256 lastClaimed;
@@ -39,8 +41,9 @@ contract SDQCheckIn is AccessControl, Pausable, ReentrancyGuard {
      * @dev Initializes the contract with the token address and sets up initial roles.
      * @param sdq The address of the SDQ token contract.
      */
-    constructor(address sdq) {
+    constructor(address sdq, address[3] memory _soulbound) {
         sdqToken = IERC20(sdq);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(EDITOR_ROLE, msg.sender);
 
         dailyClaimAmount[0] = 1.25 * 10 ** 18;
@@ -50,6 +53,7 @@ contract SDQCheckIn is AccessControl, Pausable, ReentrancyGuard {
         dailyClaimAmount[4] = 5 * 10 ** 18;
         dailyClaimAmount[5] = 7 * 10 ** 18;
         dailyClaimAmount[6] = 10 * 10 ** 18;
+        soulboundContract = _soulbound;
     }
 
     /**
@@ -129,6 +133,14 @@ contract SDQCheckIn is AccessControl, Pausable, ReentrancyGuard {
     }
 
     /**
+     * @dev Returns the Soulbound contracts used by the check-in contract.
+     * @return An array of the Soulbound contract addresses.
+     */
+    function getSoulboundContracts() public view returns (address[3] memory) {
+        return soulboundContract;
+    }
+
+    /**
      * @dev Withdraws tokens from the contract.
      * Can only be called by an account with the EDITOR_ROLE.
      * @param amount The amount of tokens to withdraw.
@@ -140,5 +152,48 @@ contract SDQCheckIn is AccessControl, Pausable, ReentrancyGuard {
         }
         sdqToken.safeTransfer(msg.sender, amount);
         emit Withdrawal(msg.sender, amount);
+    }
+
+    /**
+     * @dev Mints the first Soulbound token for the caller.
+     * Requires the caller to have checked in at least once.
+     */
+    function mintMyFirstSBT() public {
+        if (claimData[msg.sender].consecutiveDays == 0) {
+            revert AccountError(msg.sender, "You must check in at least once");
+        }
+        SoulboundInterface sbt = SoulboundInterface(soulboundContract[0]);
+        if (sbt.balanceOf(msg.sender) > 0) {
+            revert AccountError(msg.sender, "You already have a Soulbound token");
+        }
+        sbt.safeMint(msg.sender);
+    }
+
+    /**
+     * @dev Mints a Soulbound token for the caller after checking in for at least 7 days.
+     */
+    function mintMyOneWeekSBT() public {
+        if (claimData[msg.sender].consecutiveDays < 7) {
+            revert AccountError(msg.sender, "You must check in for at least 7 days");
+        }
+        SoulboundInterface sbt = SoulboundInterface(soulboundContract[1]);
+        if (sbt.balanceOf(msg.sender) > 0) {
+            revert AccountError(msg.sender, "You already have a Soulbound token");
+        }
+        sbt.safeMint(msg.sender);
+    }
+
+    /**
+     * @dev Mints a Soulbound token for the caller after checking in for at least 30 days.
+     */
+    function mintMyOneMonthSBT() public {
+        if (claimData[msg.sender].consecutiveDays < 30) {
+            revert AccountError(msg.sender, "You must check in for at least 30 days");
+        }
+        SoulboundInterface sbt = SoulboundInterface(soulboundContract[2]);
+        if (sbt.balanceOf(msg.sender) > 0) {
+            revert AccountError(msg.sender, "You already have a Soulbound token");
+        }
+        sbt.safeMint(msg.sender);
     }
 }
