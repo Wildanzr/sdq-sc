@@ -178,51 +178,56 @@ describe("SDQCharity", function () {
 
     it("Should add token", async function () {
       const address = await this.deployedAssets[0].getAddress();
-      await expect(this.sdqCharity.connect(this.owner).addToken(address, this.assets[0].ticker, this.assets[0].decimals)).to.be.emit(
-        this.sdqCharity,
-        "TokenAdded",
-      );
+      await expect(
+        this.sdqCharity.connect(this.owner).addToken(address, this.assets[0].ticker, this.assets[0].decimals),
+      ).to.be.emit(this.sdqCharity, "TokenAdded");
     });
 
     it("Should fail to add token because didn't have permission", async function () {
       await expect(
-        this.sdqCharity.connect(this.accounts[0]).addToken(await this.deployedAssets[0].getAddress(), this.assets[0].ticker, this.assets[0].decimals),
+        this.sdqCharity
+          .connect(this.accounts[0])
+          .addToken(await this.deployedAssets[0].getAddress(), this.assets[0].ticker, this.assets[0].decimals),
       ).to.be.revertedWithCustomError(this.sdqCharity, "AccessControlUnauthorizedAccount");
     });
 
     it("Should fail to add token because token address is zero", async function () {
       await expect(
-        this.sdqCharity.connect(this.owner).addToken(ethers.ZeroAddress, this.assets[0].ticker, this.assets[0].decimals),
+        this.sdqCharity
+          .connect(this.owner)
+          .addToken(ethers.ZeroAddress, this.assets[0].ticker, this.assets[0].decimals),
       ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationError");
     });
 
     it("Should fail to add token because token name is empty", async function () {
       await expect(
-        this.sdqCharity.connect(this.owner).addToken(await this.deployedAssets[0].getAddress(), "", this.assets[0].decimals),
+        this.sdqCharity
+          .connect(this.owner)
+          .addToken(await this.deployedAssets[0].getAddress(), "", this.assets[0].decimals),
       ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationError");
     });
 
     it("Should fail to add token because token decimal is zero", async function () {
       await expect(
-        this.sdqCharity.connect(this.owner).addToken(await this.deployedAssets[0].getAddress(), this.assets[0].ticker, 0),
+        this.sdqCharity
+          .connect(this.owner)
+          .addToken(await this.deployedAssets[0].getAddress(), this.assets[0].ticker, 0),
       ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationError");
     });
 
     it("Should fail to add token because token already added", async function () {
       const address = await this.deployedAssets[0].getAddress();
-      await expect(this.sdqCharity.connect(this.owner).addToken(address, this.assets[0].ticker, this.assets[0].decimals)).to.be.emit(
-        this.sdqCharity,
-        "TokenAdded",
-      );
+      await expect(
+        this.sdqCharity.connect(this.owner).addToken(address, this.assets[0].ticker, this.assets[0].decimals),
+      ).to.be.emit(this.sdqCharity, "TokenAdded");
       const tokens = await this.sdqCharity.getAvailableTokens();
       expect(tokens[0].length).to.be.equal(1);
       expect(tokens[1].length).to.be.equal(1);
       expect(tokens[0][0]).to.be.equal(address);
       expect(tokens[1][0]).to.be.equal(this.assets[0].ticker);
-      await expect(this.sdqCharity.connect(this.owner).addToken(address, this.assets[0].ticker, this.assets[0].decimals)).to.be.revertedWithCustomError(
-        this.sdqCharity,
-        "ValidationError",
-      );
+      await expect(
+        this.sdqCharity.connect(this.owner).addToken(address, this.assets[0].ticker, this.assets[0].decimals),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationError");
     });
 
     it("Should have 4 available tokens", async function () {
@@ -324,31 +329,27 @@ describe("SDQCharity", function () {
     });
 
     it("Should unable to create campaign because title is empty", async function () {
-      await expect(this.sdqCharity.connect(this.owner).createCampaign("", "Test", "Test", 100)).to.be.revertedWithCustomError(
-        this.sdqCharity,
-        "ValidationFailed",
-      );
+      await expect(
+        this.sdqCharity.connect(this.owner).createCampaign("", "Test", "Test", 100),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
     });
 
     it("Should unable to create campaign because description is empty", async function () {
-      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "", "Test", 100)).to.be.revertedWithCustomError(
-        this.sdqCharity,
-        "ValidationFailed",
-      );
+      await expect(
+        this.sdqCharity.connect(this.owner).createCampaign("Test", "", "Test", 100),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
     });
 
     it("Should unable to create campaign because details is empty", async function () {
-      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", "", 100)).to.be.revertedWithCustomError(
-        this.sdqCharity,
-        "ValidationFailed",
-      );
+      await expect(
+        this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", "", 100),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
     });
 
     it("Should unable to create campaign because target is 0", async function () {
-      await expect(this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", "Test", 0)).to.be.revertedWithCustomError(
-        this.sdqCharity,
-        "ValidationFailed",
-      );
+      await expect(
+        this.sdqCharity.connect(this.owner).createCampaign("Test", "Test", "Test", 0),
+      ).to.be.revertedWithCustomError(this.sdqCharity, "ValidationFailed");
     });
 
     it("Should create campaign correctly", async function () {
@@ -373,12 +374,12 @@ describe("SDQCharity", function () {
 
       for (let i = 0; i < 10; i++) {
         if (i % 2 === 0) {
-          await this.sdqCharity.connect(this.accounts[0]).createCampaign(`Test ${i}`, "Test", "Test", 100)
+          await this.sdqCharity.connect(this.accounts[0]).createCampaign(`Test ${i}`, "Test", "Test", 100);
         } else {
-          await this.sdqCharity.connect(this.owner).createCampaign(`Test ${i}`, "Test", "Test", 100)
+          await this.sdqCharity.connect(this.owner).createCampaign(`Test ${i}`, "Test", "Test", 100);
         }
       }
-      console.log("Number ", await this.sdqCharity.numberOfCampaigns())
+      console.log("Number ", await this.sdqCharity.numberOfCampaigns());
       const restuls = await this.sdqCharity.connect(this.owner).getMyCampaignIndex(1, 20);
       console.log("Owner", restuls);
       const restul1 = await this.sdqCharity.connect(this.owner).getMyCampaignIndex(2, 20);
@@ -1031,7 +1032,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should fail to claim first donation SBT because already claimed", async function () {
       const ethDonation = parseEther("1");
@@ -1041,14 +1042,14 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should claim first donation SBT correctly", async function () {
       const ethDonation = parseEther("1");
       await this.sdqCharity.connect(this.accounts[0]).donate(1, "Anonymous", "Hello World", { value: ethDonation });
       await this.sdqCharity.connect(this.accounts[0]).mintMyFirstDonationSBT();
       expect(await this.deployedSBT[0].balanceOf(this.accounts[0].address)).to.be.equal(1);
-    })
+    });
 
     it("Should fail to claim fifth donation SBT because donate less than 5 times", async function () {
       for (let i = 0; i < 4; i++) {
@@ -1059,7 +1060,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should fail to claim fifth donation SBT because already claimed", async function () {
       for (let i = 0; i < 5; i++) {
@@ -1071,7 +1072,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should claim fifth donation SBT correctly", async function () {
       for (let i = 0; i < 5; i++) {
@@ -1080,7 +1081,7 @@ describe("SDQCharity", function () {
       }
       await this.sdqCharity.connect(this.accounts[0]).mintMyFifthDonationSBT();
       expect(await this.deployedSBT[1].balanceOf(this.accounts[0].address)).to.be.equal(1);
-    })
+    });
 
     it("Should fail to claim tenth donation SBT because donate less than 10 times", async function () {
       for (let i = 0; i < 9; i++) {
@@ -1091,7 +1092,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should fail to claim tenth donation SBT because already claimed", async function () {
       for (let i = 0; i < 10; i++) {
@@ -1103,7 +1104,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should claim tenth donation SBT correctly", async function () {
       for (let i = 0; i < 10; i++) {
@@ -1112,7 +1113,7 @@ describe("SDQCharity", function () {
       }
       await this.sdqCharity.connect(this.accounts[0]).mintMyTenDonationSBT();
       expect(await this.deployedSBT[2].balanceOf(this.accounts[0].address)).to.be.equal(1);
-    })
+    });
 
     it("Should fail to claim fifty donation SBT because donate less than 50 times", async function () {
       for (let i = 0; i < 49; i++) {
@@ -1123,7 +1124,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should fail to claim fifty donation SBT because already claimed", async function () {
       for (let i = 0; i < 50; i++) {
@@ -1135,7 +1136,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should claim fifty donation SBT correctly", async function () {
       for (let i = 0; i < 50; i++) {
@@ -1144,7 +1145,7 @@ describe("SDQCharity", function () {
       }
       await this.sdqCharity.connect(this.accounts[0]).mintMyFiftyDonationSBT();
       expect(await this.deployedSBT[3].balanceOf(this.accounts[0].address)).to.be.equal(1);
-    })
+    });
 
     it("Should fail to claim hundred donation SBT because donate less than 100 times", async function () {
       for (let i = 0; i < 99; i++) {
@@ -1155,7 +1156,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should fail to claim hundred donation SBT because already claimed", async function () {
       for (let i = 0; i < 100; i++) {
@@ -1167,7 +1168,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should claim hundred donation SBT correctly", async function () {
       for (let i = 0; i < 100; i++) {
@@ -1176,14 +1177,14 @@ describe("SDQCharity", function () {
       }
       await this.sdqCharity.connect(this.accounts[0]).mintMyHundredDonationSBT();
       expect(await this.deployedSBT[4].balanceOf(this.accounts[0].address)).to.be.equal(1);
-    })
+    });
 
     it("Should fail to claim first campaign SBT because never create campaign", async function () {
       await expect(this.sdqCharity.connect(this.accounts[0]).mintMyFirstCampaignSBT()).to.be.revertedWithCustomError(
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should fail to claim first campaign SBT because already claimed", async function () {
       await this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", "Test", 100);
@@ -1192,20 +1193,20 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should claim first campaign SBT correctly", async function () {
       await this.sdqCharity.connect(this.accounts[0]).createCampaign("Test", "Test", "Test", 100);
       await this.sdqCharity.connect(this.accounts[0]).mintMyFirstCampaignSBT();
       expect(await this.deployedSBT[5].balanceOf(this.accounts[0].address)).to.be.equal(1);
-    })
+    });
 
     it("Should fail to claim third campaign SBT because never create campaign", async function () {
       await expect(this.sdqCharity.connect(this.accounts[0]).mintMyThirdCampaignSBT()).to.be.revertedWithCustomError(
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should fail to claim third campaign SBT because already claimed", async function () {
       for (let i = 0; i < 3; i++) {
@@ -1216,7 +1217,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should claim third campaign SBT correctly", async function () {
       for (let i = 0; i < 3; i++) {
@@ -1224,7 +1225,7 @@ describe("SDQCharity", function () {
       }
       await this.sdqCharity.connect(this.accounts[0]).mintMyThirdCampaignSBT();
       expect(await this.deployedSBT[6].balanceOf(this.accounts[0].address)).to.be.equal(1);
-    })
+    });
 
     // create test code similar to mintMyFirstCampaignSBT to test mintMyTenCampaignSBT
     it("Should fail to claim ten campaign SBT because never create campaign", async function () {
@@ -1232,7 +1233,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should fail to claim ten campaign SBT because already claimed", async function () {
       for (let i = 0; i < 10; i++) {
@@ -1243,7 +1244,7 @@ describe("SDQCharity", function () {
         this.sdqCharity,
         "AccountError",
       );
-    })
+    });
 
     it("Should claim ten campaign SBT correctly", async function () {
       for (let i = 0; i < 10; i++) {
@@ -1251,7 +1252,6 @@ describe("SDQCharity", function () {
       }
       await this.sdqCharity.connect(this.accounts[0]).mintMyTenCampaignSBT();
       expect(await this.deployedSBT[7].balanceOf(this.accounts[0].address)).to.be.equal(1);
-    })
-
-  })
+    });
+  });
 });

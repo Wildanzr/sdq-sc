@@ -1,7 +1,14 @@
+import { AddressLike } from "ethers";
 import { ethers } from "hardhat";
 
-import type { AssetToken, AssetToken__factory, SDQCharity, SDQCharity__factory, Soulbound, Soulbound__factory } from "../../types";
-import { AddressLike } from "ethers";
+import type {
+  AssetToken,
+  AssetToken__factory,
+  SDQCharity,
+  SDQCharity__factory,
+  Soulbound,
+  Soulbound__factory,
+} from "../../types";
 
 interface Asset {
   name: string;
@@ -71,8 +78,8 @@ export async function deploySDQCharityFixture() {
     "Qmb12QKeNKRzZ3Su22LLeLGBzAk9ptMTXMPReJuPKVhhJN",
     "QmamXWuBbytr9KvczrNiWZb9GX5QJHjRx7GQQ61vk6A3r5",
     "QmZ99DCFcKwxnvqYTNGLsi8MRVMMazp8C4TFHBkyAFqJSN",
-    "QmQjRgsjVzfWq84zthBvfbjvFDxx93m9HKqfMQMaQvZcYE"
-  ]
+    "QmQjRgsjVzfWq84zthBvfbjvFDxx93m9HKqfMQMaQvZcYE",
+  ];
 
   // Deploy Soulbond Tokens
   const deployedSBT: Soulbound[] = [];
@@ -83,7 +90,6 @@ export async function deploySDQCharityFixture() {
     deployedSBT.push(sbt);
     deployedAddresses.push(await sbt.getAddress());
   }
-
 
   const deployedAssets: AssetToken[] = [];
   for (const item of assets) {

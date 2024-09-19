@@ -263,7 +263,7 @@ describe("SDQCheckIn", function () {
 
   describe("Soulbound", function () {
     beforeEach(async function () {
-      const { shodaqo, sdqCheckin, owner, accounts, deployedSBT, } = await this.loadFixture(deploySDQCheckInFixture);
+      const { shodaqo, sdqCheckin, owner, accounts, deployedSBT } = await this.loadFixture(deploySDQCheckInFixture);
       this.shodaqo = shodaqo;
       this.sdqCheckin = sdqCheckin;
       this.owner = owner;
@@ -288,8 +288,8 @@ describe("SDQCheckIn", function () {
       await expect(this.sdqCheckin.connect(this.accounts[1]).mintMyFirstSBT()).to.be.revertedWithCustomError(
         this.sdqCheckin,
         "AccountError",
-      )
-    })
+      );
+    });
 
     it("Should fail to claim first SBT because already claimed", async function () {
       await this.sdqCheckin.connect(this.accounts[1]).checkIn();
@@ -297,8 +297,8 @@ describe("SDQCheckIn", function () {
       await expect(this.sdqCheckin.connect(this.accounts[1]).mintMyFirstSBT()).to.be.revertedWithCustomError(
         this.sdqCheckin,
         "AccountError",
-      )
-    })
+      );
+    });
 
     it("Should success to claim first SBT", async function () {
       await this.sdqCheckin.connect(this.accounts[1]).checkIn();
@@ -315,8 +315,8 @@ describe("SDQCheckIn", function () {
       await expect(this.sdqCheckin.connect(this.accounts[1]).mintMyOneWeekSBT()).to.be.revertedWithCustomError(
         this.sdqCheckin,
         "AccountError",
-      )
-    })
+      );
+    });
 
     it("Should fail to claim second SBT because already claimed", async function () {
       for (let i = 0; i < 7; i++) {
@@ -327,8 +327,8 @@ describe("SDQCheckIn", function () {
       await expect(this.sdqCheckin.connect(this.accounts[1]).mintMyOneWeekSBT()).to.be.revertedWithCustomError(
         this.sdqCheckin,
         "AccountError",
-      )
-    })
+      );
+    });
 
     it("Should success to claim second SBT", async function () {
       for (let i = 0; i < 7; i++) {
@@ -349,7 +349,7 @@ describe("SDQCheckIn", function () {
       await expect(this.sdqCheckin.connect(this.accounts[1]).mintMyOneMonthSBT()).to.be.revertedWithCustomError(
         this.sdqCheckin,
         "AccountError",
-      )
+      );
     });
 
     it("Should fail to claim third SBT because already claimed", async function () {
@@ -363,7 +363,7 @@ describe("SDQCheckIn", function () {
       await expect(this.sdqCheckin.connect(this.accounts[1]).mintMyOneMonthSBT()).to.be.revertedWithCustomError(
         this.sdqCheckin,
         "AccountError",
-      )
+      );
     });
 
     it("Should success to claim third SBT", async function () {
@@ -376,5 +376,5 @@ describe("SDQCheckIn", function () {
       await this.sdqCheckin.connect(this.accounts[1]).mintMyOneMonthSBT();
       expect(await this.deployedSBT[2].balanceOf(this.accounts[1].address)).to.be.equal(1);
     });
-  })
+  });
 });

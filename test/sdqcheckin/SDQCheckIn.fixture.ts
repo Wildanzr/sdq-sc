@@ -1,7 +1,14 @@
+import { AddressLike } from "ethers";
 import { ethers } from "hardhat";
 
-import type { SDQCheckIn, SDQCheckIn__factory, Shodaqo, Shodaqo__factory, Soulbound, Soulbound__factory } from "../../types";
-import { AddressLike } from "ethers";
+import type {
+  SDQCheckIn,
+  SDQCheckIn__factory,
+  Shodaqo,
+  Shodaqo__factory,
+  Soulbound,
+  Soulbound__factory,
+} from "../../types";
 
 export async function deploySDQCheckInFixture() {
   // Get signers
@@ -13,8 +20,8 @@ export async function deploySDQCheckInFixture() {
   const sbtTokenURIs = [
     "QmebprnVt1cLqrPcJuZbFkCsYNfc9MBBJRacrGsXLvC6NM",
     "QmdtKy3zkBT5FjPgL9ftEkvjZj3kvNdhu594ddkvgbAgtU",
-    "QmWufrXaHHNZVPc8gtYiGkaY2kjCAzvejdJCCoBveMs7vs"
-  ]
+    "QmWufrXaHHNZVPc8gtYiGkaY2kjCAzvejdJCCoBveMs7vs",
+  ];
 
   // Deploy Soulbond Tokens
   const deployedSBT: Soulbound[] = [];
@@ -26,7 +33,6 @@ export async function deploySDQCheckInFixture() {
     deployedAddresses.push(await sbt.getAddress());
   }
 
-
   // Deploy Shodaqo token
   const Shodaqo = (await ethers.getContractFactory("Shodaqo")) as unknown as Shodaqo__factory;
   const shodaqo = (await Shodaqo.deploy(owner.address, minter.address)) as Shodaqo;
@@ -36,9 +42,8 @@ export async function deploySDQCheckInFixture() {
   const sdqCheckin = (await SDQCheckin.deploy(await shodaqo.getAddress(), [
     deployedAddresses[0],
     deployedAddresses[1],
-    deployedAddresses[2]
+    deployedAddresses[2],
   ])) as SDQCheckIn;
-
 
   // Owner send 1 Bilion token to SDQCheckin
   await shodaqo.transfer(sdqCheckin.getAddress(), ethers.parseEther("1000000000"));
