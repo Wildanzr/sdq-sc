@@ -1,8 +1,8 @@
+import { AddressLike } from "ethers";
 import { promises as fs } from "fs";
 import { DeployFunction } from "hardhat-deploy/types";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import * as path from "path";
-import { AddressLike } from "ethers";
 
 // interface Asset {
 //   name: string;
@@ -92,7 +92,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   //   "QmWufrXaHHNZVPc8gtYiGkaY2kjCAzvejdJCCoBveMs7vs"
   // ];
 
-  const { deployer, minter } = await hre.getNamedAccounts();
+  const { deployer } = await hre.getNamedAccounts();
   const { deploy } = hre.deployments;
 
   // Deploy Soulbond Tokens
@@ -140,15 +140,15 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     "Qmb12QKeNKRzZ3Su22LLeLGBzAk9ptMTXMPReJuPKVhhJN",
     "QmamXWuBbytr9KvczrNiWZb9GX5QJHjRx7GQQ61vk6A3r5",
     "QmZ99DCFcKwxnvqYTNGLsi8MRVMMazp8C4TFHBkyAFqJSN",
-    "QmQjRgsjVzfWq84zthBvfbjvFDxx93m9HKqfMQMaQvZcYE"
-  ]
+    "QmQjRgsjVzfWq84zthBvfbjvFDxx93m9HKqfMQMaQvZcYE",
+  ];
   const deployedCheckinSBTAddr: AddressLike[] = [];
   for (let i = 0; i < charitySBTTokenURIs.length; i++) {
     const sbt = await deploy("Soulbound", {
       from: deployer,
       log: true,
       args: [deployer, charitySBTTokenURIs[i]],
-    })
+    });
     deployedCheckinSBTAddr.push(sbt.address);
     const sbtParams = `module.exports = ["${deployer}", "${charitySBTTokenURIs[i]}"];`;
     await writeToFile(`${path}sbtcrt${i}.ts`, sbtParams);
@@ -156,13 +156,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   }
   await writeToFile(`${path}checkinsbt.ts`, `module.exports = ${JSON.stringify(deployedCheckinSBTAddr)};`);
 
-
   // SDQCharity
   const sdqCharity = await deploy("SDQCharity", {
     from: deployer,
     log: true,
     args: [deployedCheckinSBTAddr],
-  })
+  });
 
   // Write the addresses to a file
   const charityParams = `module.exports = [["${deployedCheckinSBTAddr[0]}","${deployedCheckinSBTAddr[1]}","${deployedCheckinSBTAddr[2]}","${deployedCheckinSBTAddr[3]}","${deployedCheckinSBTAddr[4]}","${deployedCheckinSBTAddr[5]}","${deployedCheckinSBTAddr[6]}","${deployedCheckinSBTAddr[7]}"]];`;
